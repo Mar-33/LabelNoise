@@ -1,10 +1,10 @@
 path:
-    img_path : '/content/drive/MyDrive/Masterarbeit/PhenoBenchSubset/'
-    out_path : '/content/drive/MyDrive/Masterarbeit/'
+    img_path : '/cache/molave/PhenoBench/'
+    out_path : './results/'
 
 hyperparameter:
     numEpochs : 200
-    batch_size : 8
+    batch_size : 16
     learning_rate : 0.001
     # num_imgs : now taking all
 

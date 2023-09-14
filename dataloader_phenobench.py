@@ -1,5 +1,6 @@
 from phenobench import PhenoBench
 from pprint import pprint
+from PIL import Image
 
 class PhenoBenchDataset(object):
     def __init__(self, root, transform=None, split=None, data=None):

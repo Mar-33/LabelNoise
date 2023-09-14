@@ -38,12 +38,12 @@ def main():
 
   # Hyperparameter
   numEpochs = cfg["hyperparameter"]["numEpochs"]
-  batch_size = cfg["hyperparameter"]["batchsize"]
+  batch_size = cfg["hyperparameter"]["batch_size"]
   learning_rate = cfg["hyperparameter"]["learning_rate"]
   # num_imgs = now taking all
 
   # Model
-  model_name = cfg["model"]["model_name"] + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + 'epochs_' + str(numEpochs) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   encoder = cfg["model"]["encoder"]
 
@@ -54,7 +54,7 @@ def main():
 
   # Paths
   img_path = cfg["path"]["img_path"]
-  out_path = cfg["path"]["out_path"]
+  out_path = cfg["path"]["out_path"] + model_name + '/'
   final_model_path = os.path.join(out_path,'models/')
   checkpoint_path = os.path.join(out_path,'models/checkpoints/')
   log_path = os.path.join(out_path,'runs/')
@@ -83,8 +83,8 @@ def main():
 
   transform = {'image': transform_img, 'mask': transform_mask}
 
-  pheno_train_dataset = PhenoBenchDataset(img_path, transform=transform, split='train')
-  pheno_val_dataset = PhenoBenchDataset(img_path, transform=transform, split='val')
+  pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train')
+  pheno_val_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='val')
 
   print('Number of train images: ',pheno_train_dataset.__len__())
   print('Number of val images:   ',pheno_val_dataset.__len__())
@@ -109,7 +109,7 @@ def main():
 
   model.to(device)
 
-  writer = SummaryWriter(runs_path)
+  writer = SummaryWriter(log_path)
 
   ############################ Training Loop ############################
 
@@ -117,7 +117,7 @@ def main():
   optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay = 0.0005)
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, numEpochs)
 
-
+  loss_max_val = float('inf')
 
   for epoch in range(numEpochs):
     start_time = time.time()
@@ -130,7 +130,6 @@ def main():
 
     losses = 0
     min_train_loss = float('inf')
-    # count = 0
 
 
     for batch_idx, (img, masks) in enumerate(trainloader):
@@ -143,6 +142,9 @@ def main():
       losses += loss.detach().cpu().numpy()
       if loss < min_train_loss:
         min_train_loss = loss
+        # Save the model if loss has new minimum:
+        #checkpoint_name_path = os.path.join(checkpoint_path, 'max_valid_model.pth')
+        #torch.save(model.state_dict(), checkpoint_name_path)
 
       if batch_idx % print_freq == 0:
         batch_time = np.round(((time.time() - start_time)/(batch_idx+1)*(len(trainloader)-(batch_idx+1))*100)/100)
@@ -258,7 +260,8 @@ def main():
         checkpoint_name_path = os.path.join(checkpoint_path, checkpoint_name)
         torch.save(model.state_dict(), checkpoint_name_path)
 
-    if loss < min_train_loss:
+    if loss_max_val > loss:
+        loss_max_val = min_train_loss
         # Save the model if loss has new minimum:
         checkpoint_name_path = os.path.join(checkpoint_path, 'max_valid_model.pth')
         torch.save(model.state_dict(), checkpoint_name_path)
