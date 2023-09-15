@@ -40,6 +40,7 @@ def main():
   numEpochs = cfg["hyperparameter"]["numEpochs"]
   batch_size = cfg["hyperparameter"]["batch_size"]
   learning_rate = cfg["hyperparameter"]["learning_rate"]
+  img_size = cfg["hyperparameter"]["img_size"]
   # num_imgs = now taking all
 
   # Model
@@ -76,9 +77,9 @@ def main():
   torch.cuda.manual_seed_all(seed)
 
   ############### Create Dataset Instance and Dataloader ###############
-  transform_img = transforms.Compose([transforms.Resize(size=(256, 256)),
+  transform_img = transforms.Compose([transforms.Resize(size=(img_size, img_size)),
                                       transforms.ToTensor()])
-  transform_mask = transforms.Compose([transforms.Resize(size=(256,256),
+  transform_mask = transforms.Compose([transforms.Resize(size=(img_size, img_size),
                                         interpolation = transforms.InterpolationMode.NEAREST), transforms.ToTensor()])
 
   transform = {'image': transform_img, 'mask': transform_mask}
@@ -267,7 +268,7 @@ def main():
         torch.save(model.state_dict(), checkpoint_name_path)
 
     # Time estimation
-    epoch_time = np.round(((time.time() - start_time)/(epoch+1)*(numEpochs-(epoch+1))*100)/100)
+    epoch_time = np.round(((time.time() - start_time)*(numEpochs-(epoch+1))*100)/100)
     print(f"Time left for Training: {int(epoch_time/(24*3600))}d {int(epoch_time/3600) % 24}h {int(epoch_time/60) % 60}min {int(epoch_time % 60)}s \n")
 
   ### Saving Model after last Epoch

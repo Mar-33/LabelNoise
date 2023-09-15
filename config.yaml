@@ -3,9 +3,10 @@ path:
     out_path : './results/'
 
 hyperparameter:
-    numEpochs : 200
+    numEpochs : 100
     batch_size : 16
     learning_rate : 0.001
+    img_size : 512
     # num_imgs : now taking all
 
 model:
