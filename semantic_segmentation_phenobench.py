@@ -116,7 +116,7 @@ def main():
 
   loss_fn = nn.CrossEntropyLoss()
   optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay = 0.0005)
-  scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, numEpochs)
+  scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, numEpochs, eta_min=learning_rate/100)
 
   loss_max_val = float('inf')
 
