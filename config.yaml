@@ -5,15 +5,16 @@ path:
 hyperparameter:
     numEpochs : 100
     batch_size : 16
-    learning_rate : 0.001
-    img_size : 512
+    learning_rate : 0.0001
+    img_size : 256
     # num_imgs : now taking all
 
 model:
     model_name : 'semantic_segmentation_model_phenobench_'
     num_classes : 3
     encoder : 'efficientnet-b0'
+    weights : None
 
 print:
-    print_freq : 100
+    print_freq : 50
     save_freq : 25

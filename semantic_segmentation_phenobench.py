@@ -44,9 +44,10 @@ def main():
   # num_imgs = now taking all
 
   # Model
-  model_name = cfg["model"]["model_name"] + 'epochs_' + str(numEpochs) + '_' + str(datetime.date.today())
-  num_classes = cfg["model"]["num_classes"]
   encoder = cfg["model"]["encoder"]
+  model_name = cfg["model"]["model_name"] + encoder + '_epochs_' + str(numEpochs) + '_' + str(datetime.date.today())
+  num_classes = cfg["model"]["num_classes"]
+  weights = cfg["model"]["weights"]
 
 
   # Prints and Save:
@@ -102,7 +103,7 @@ def main():
   # Model
   model = smp.Unet(
       encoder_name=encoder,
-      encoder_weights="imagenet",
+      #encoder_weights=weights,
       in_channels=3,
       classes=num_classes,
       activation='softmax2d'
