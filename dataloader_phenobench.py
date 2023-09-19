@@ -16,7 +16,9 @@ class PhenoBenchDataset(object):
         # self.data = PhenoBench(self.root, target_types=["semantics"], split = self.split) #target_types=["semantics", "plant_instances", "leaf_instances"]
 
         image = self.data[idx]['image']
-        mask = Image.fromarray(self.data[idx]['semantics'])
+        mask = self.data[idx]['semantics']
+        mask[mask > 2] -= 2
+        mask = Image.fromarray(mask)
 
         if self.transform:
             image = self.transform['image'](image)
