@@ -1,4 +1,5 @@
 import os
+import cv2
 import time
 import ipdb
 import yaml
@@ -23,6 +24,22 @@ from torchmetrics.classification import MulticlassJaccardIndex
 # from google.colab import drive
 # drive.mount('/content/drive')
 
+def change_instance_class(masks, old_class, new_class, factor):
+  masks = masks.numpy()
+  modified_masks = np.zeros_like(masks)
+  for i, mask in enumerate(masks):
+    mask = mask
+    # Create a binary mask for the target class
+    target_mask = (mask == old_class).astype(np.uint8)
+
+    # Find connected components and label each instance
+    num_labels, labeled_mask = cv2.connectedComponents(target_mask)
+    random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
+  
+    # Replace random_instances with new class label
+    instance_mask = np.isin(labeled_mask, random_instance)
+    modified_masks[i] = np.where(instance_mask, new_class, mask)
+  return torch.from_numpy(modified_masks)
 
 
 def main():
@@ -41,6 +58,8 @@ def main():
   batch_size = cfg["hyperparameter"]["batch_size"]
   learning_rate = cfg["hyperparameter"]["learning_rate"]
   img_size = cfg["hyperparameter"]["img_size"]
+  noise_factor = cfg["hyperparameter"]["noise_factor"]
+
   # num_imgs = now taking all
 
   # Model
@@ -137,8 +156,9 @@ def main():
     for batch_idx, (img, masks) in enumerate(trainloader):
       optimizer.zero_grad()
       predictions = model(img.to(device))
-      masks_squeezed = masks.squeeze(1).long().to(device)
-      loss = loss_fn(predictions,masks_squeezed)
+      masks_squeezed = masks.squeeze(1)
+      noisy_masks = change_instance_class(masks_squeezed, old_class = 1, new_class = 2, factor = noise_factor)
+      loss = loss_fn(predictions,noisy_masks.long().to(device))
       loss.backward()
       optimizer.step()
       losses += loss.detach().cpu().numpy()
