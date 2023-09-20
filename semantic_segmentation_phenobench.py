@@ -18,6 +18,7 @@ import torchvision.transforms as transforms
 from sklearn.metrics import confusion_matrix
 from efficientnet_pytorch import EfficientNet
 from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import ConfusionMatrixDisplay
 from torch.utils.tensorboard import SummaryWriter
 from torchmetrics.classification import MulticlassJaccardIndex
 
@@ -64,7 +65,7 @@ def main():
 
   # Model
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
   my_seed = cfg["model"]["seed"]
@@ -157,7 +158,8 @@ def main():
       optimizer.zero_grad()
       predictions = model(img.to(device))
       masks_squeezed = masks.squeeze(1)
-      noisy_masks = change_instance_class(masks_squeezed, old_class = 1, new_class = 2, factor = noise_factor)
+      if noise_factor != 0:
+        noisy_masks = change_instance_class(masks_squeezed, old_class = 1, new_class = 2, factor = noise_factor)
       loss = loss_fn(predictions,noisy_masks.long().to(device))
       loss.backward()
       optimizer.step()
@@ -206,7 +208,9 @@ def main():
     writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
     writer.add_scalars('Precision_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
     writer.add_scalar('Accuracy_Training',accuracy ,epoch)
-
+    fig, ax = plt.subplots()
+    ConfusionMatrixDisplay(confusion).plot(ax=ax)
+    writer.add_figure("Confusion Matrix Training", fig, global_step=epoch)
 
 ########################### Evaluation on Validation Set ##########################
     with torch.no_grad():
@@ -272,6 +276,9 @@ def main():
     writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
     writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
 
+    fig, ax = plt.subplots()
+    ConfusionMatrixDisplay(confusion).plot(ax=ax)
+    writer.add_figure("Confusion Matrix Validation", fig, global_step=epoch)
 
     # Update the Learning Rate
     scheduler.step()

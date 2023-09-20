@@ -7,7 +7,7 @@ hyperparameter:
     batch_size : 16
     learning_rate : 0.0001
     img_size : 256
-    noise_factor : 0.1
+    noise_factor : 0
     # num_imgs : now taking all
 
 model:
@@ -15,7 +15,7 @@ model:
     num_classes : 3
     encoder : 'efficientnet-b0'
     weights : None
-    seed : 8
+    seed : 4
 
 print:
     print_freq : 50
