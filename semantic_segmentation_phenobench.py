@@ -64,11 +64,11 @@ def main():
   # num_imgs = now taking all
 
   # Model
+  my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
   model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
-  my_seed = cfg["model"]["seed"]
 
   # Prints and Save:
   print_freq = cfg["print"]["print_freq"]
@@ -160,6 +160,8 @@ def main():
       masks_squeezed = masks.squeeze(1)
       if noise_factor != 0:
         noisy_masks = change_instance_class(masks_squeezed, old_class = 1, new_class = 2, factor = noise_factor)
+      else:
+        noisy_masks = masks_squeezed
       loss = loss_fn(predictions,noisy_masks.long().to(device))
       loss.backward()
       optimizer.step()
