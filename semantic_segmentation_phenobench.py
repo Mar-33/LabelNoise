@@ -64,10 +64,10 @@ def main():
 
   # Model
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_epochs_' + str(numEpochs) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
-
+  my_seed = cfg["model"]["seed"]
 
   # Prints and Save:
   print_freq = cfg["print"]["print_freq"]
@@ -90,7 +90,7 @@ def main():
     os.makedirs(log_path)
 
   ######################## Fix the random seed ########################
-  seed = 4
+  seed = my_seed
   random.seed(seed)
   np.random.seed(seed)
   torch.manual_seed(seed)
