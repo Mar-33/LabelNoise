@@ -210,9 +210,10 @@ def main():
     writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
     writer.add_scalars('Precision_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
     writer.add_scalar('Accuracy_Training',accuracy ,epoch)
-    fig, ax = plt.subplots()
-    ConfusionMatrixDisplay(confusion).plot(ax=ax)
-    writer.add_figure("Confusion Matrix Training", fig, global_step=epoch)
+    writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0,0], 'SP':confusion[1,0], 'SW':confusion[2,0], 'PP':confusion[1,1], 'PS':confusion[0,1], 'PW':confusion[2,1], 'WW':confusion[2,2], 'WS':confusion[0,2], 'WP':confusion[1,2]}, epoch) # True Value --> Predicted Value
+    # fig, ax = plt.subplots()
+    # ConfusionMatrixDisplay(confusion).plot(ax=ax)
+    # writer.add_figure("Confusion_Matrix_Training", fig, global_step=epoch)
 
 ########################### Evaluation on Validation Set ##########################
     with torch.no_grad():
@@ -277,10 +278,10 @@ def main():
     writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
     writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
     writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
-
-    fig, ax = plt.subplots()
-    ConfusionMatrixDisplay(confusion).plot(ax=ax)
-    writer.add_figure("Confusion Matrix Validation", fig, global_step=epoch)
+    writer.add_scalars('Confusion_Matrix_Validation',  {'SS':confusion[0,0], 'SP':confusion[1,0], 'SW':confusion[2,0], 'PP':confusion[1,1], 'PS':confusion[0,1], 'PW':confusion[2,1], 'WW':confusion[2,2], 'WS':confusion[0,2], 'WP':confusion[1,2]}, epoch) # True Value --> Predicted Value
+    # fig, ax = plt.subplots()
+    # ConfusionMatrixDisplay(confusion).plot(ax=ax)
+    # writer.add_figure("Confusion Matrix Validation", fig, global_step=epoch)
 
     # Update the Learning Rate
     scheduler.step()
