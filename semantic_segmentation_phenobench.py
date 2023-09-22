@@ -26,22 +26,38 @@ from torchmetrics.classification import MulticlassJaccardIndex
 # drive.mount('/content/drive')
 
 def change_instance_class(masks, old_class, new_class, factor):
-  masks = masks.numpy()
-  modified_masks = np.zeros_like(masks)
-  for i, mask in enumerate(masks):
-    mask = mask
-    # Create a binary mask for the target class
-    target_mask = (mask == old_class).astype(np.uint8)
+  if factor == 0:
+      return masks
+  else:
+    masks = masks.numpy()
+    modified_masks = np.zeros_like(masks)
+    for i, mask in enumerate(masks):
+      mask = mask
+      # Create a binary mask for the target class
+      target_mask = (mask == old_class).astype(np.uint8)
 
-    # Find connected components and label each instance
-    num_labels, labeled_mask = cv2.connectedComponents(target_mask)
-    random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
-  
-    # Replace random_instances with new class label
-    instance_mask = np.isin(labeled_mask, random_instance)
-    modified_masks[i] = np.where(instance_mask, new_class, mask)
-  return torch.from_numpy(modified_masks)
+      # Find connected components and label each instance
+      num_labels, labeled_mask = cv2.connectedComponents(target_mask)
+      random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
 
+      # Replace random_instances with new class label
+      instance_mask = np.isin(labeled_mask, random_instance)
+      modified_masks[i] = np.where(instance_mask, new_class, mask)
+    return torch.from_numpy(modified_masks)
+
+def random_noise(masks, num_classes, device, factor):
+  if factor == 0:
+    return masks
+  else:
+    noise_level = torch.randint(0, 101, (masks.shape)).to(device)
+    noise_level[noise_level > factor*100] = 0
+    noise_level[noise_level != 0] = 1
+
+    noise = torch.randint(1,num_classes,(masks.shape)).to(device) * noise_level
+
+    noisy_masks = masks.to(device) + noise.to(device)
+    noisy_masks[noisy_masks>2] -= num_classes
+    return noisy_masks
 
 def main():
   parser = argparse.ArgumentParser()
@@ -59,14 +75,14 @@ def main():
   batch_size = cfg["hyperparameter"]["batch_size"]
   learning_rate = cfg["hyperparameter"]["learning_rate"]
   img_size = cfg["hyperparameter"]["img_size"]
-  noise_factor = cfg["hyperparameter"]["noise_factor"]
-
+  in_factor = cfg["hyperparameter"]["instance_noise_factor"]
+  rn_factor = cfg["hyperparameter"]['random_noise_factor']
   # num_imgs = now taking all
 
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor*100) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_in_' + str(in_factor*100) + '_rn' + str(rn_factor*100) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
