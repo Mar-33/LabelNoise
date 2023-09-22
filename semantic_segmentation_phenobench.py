@@ -66,7 +66,7 @@ def main():
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_instance_noise_' + str(noise_factor*100) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
