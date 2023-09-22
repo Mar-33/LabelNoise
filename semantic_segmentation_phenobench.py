@@ -173,11 +173,12 @@ def main():
     for batch_idx, (img, masks) in enumerate(trainloader):
       optimizer.zero_grad()
       predictions = model(img.to(device))
-      masks_squeezed = masks.squeeze(1)
-      if noise_factor != 0:
-        noisy_masks = change_instance_class(masks_squeezed, old_class = 1, new_class = 2, factor = noise_factor)
-      else:
-        noisy_masks = masks_squeezed
+      noisy_masks = masks.squeeze(1)
+      
+      # Label Augmentations:
+      noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+      
       loss = loss_fn(predictions,noisy_masks.long().to(device))
       loss.backward()
       optimizer.step()
