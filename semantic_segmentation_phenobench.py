@@ -58,6 +58,40 @@ def random_noise(masks, num_classes, device, factor):
     noisy_masks = masks.to(device) + noise.to(device)
     noisy_masks[noisy_masks>2] -= num_classes
     return noisy_masks
+  
+def erosion(masks, num_classes, device, iter, kernel_size = 3):
+  if iter == 0:
+    return masks
+  else:
+    erosed_masks = np.zeros((masks.shape))
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    for idx in range(masks.shape[0]):
+      for sem_class in range(1, num_classes):
+        mask = masks[idx].clone()
+        mask[mask != sem_class] = 0
+        mask[mask == sem_class] = 1
+        mask = ((mask.cpu().numpy()) * 255).astype(np.uint8)
+        erosed = cv2.erode(mask, kernel, iterations=iter)
+        # ipdb.set_trace()
+        erosed_masks[idx] += erosed/255*sem_class
+    return torch.tensor(erosed_masks).to(device)
+
+def dilation(masks, num_classes, device, iter, kernel_size = 3):
+  if iter == 0:
+    return masks
+  else:
+    dilated_masks = np.zeros((masks.shape))
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    for idx in range(masks.shape[0]):
+      for sem_class in range(1, num_classes):
+        mask = masks[idx].clone()
+        mask[mask != sem_class] = 0
+        mask[mask == sem_class] = 1
+        mask = ((mask.cpu().numpy()) * 255).astype(np.uint8)
+        dilated = cv2.dilate(mask, kernel, iterations=iter)
+        # ipdb.set_trace()
+        dilated_masks[idx] += dilated/255*sem_class
+    return torch.tensor(dilated_masks).to(device) 
 
 def main():
   parser = argparse.ArgumentParser()
@@ -77,12 +111,15 @@ def main():
   img_size = cfg["hyperparameter"]["img_size"]
   in_factor = cfg["hyperparameter"]["instance_noise_factor"]
   rn_factor = cfg["hyperparameter"]['random_noise_factor']
+  erosion_iter = cfg["hyperparameter"]['erosion_iter']
+  dilation_iter = cfg["hyperparameter"]['dilation_iter']
+
   # num_imgs = now taking all
 
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_epochs_' + str(numEpochs) + '_in_' + str(in_factor*100) + '_rn' + str(rn_factor*100) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(in_factor*100) + '_rn_' + str(rn_factor*100) + '_di_' + str(dilation_iter*100) + '_er_' + str(erosion_iter*100) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -177,6 +214,8 @@ def main():
       
       # Label Augmentations:
       noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter) # Dilation
+      noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter) # Erosion
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
       
       loss = loss_fn(predictions,noisy_masks.long().to(device))
@@ -227,7 +266,7 @@ def main():
     writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
     writer.add_scalars('Precision_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
     writer.add_scalar('Accuracy_Training',accuracy ,epoch)
-    writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0,0], 'SP':confusion[1,0], 'SW':confusion[2,0], 'PP':confusion[1,1], 'PS':confusion[0,1], 'PW':confusion[2,1], 'WW':confusion[2,2], 'WS':confusion[0,2], 'WP':confusion[1,2]}, epoch) # True Value --> Predicted Value
+    writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
     # writer.add_figure("Confusion_Matrix_Training", fig, global_step=epoch)
@@ -295,7 +334,7 @@ def main():
     writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
     writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
     writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
-    writer.add_scalars('Confusion_Matrix_Validation',  {'SS':confusion[0,0], 'SP':confusion[1,0], 'SW':confusion[2,0], 'PP':confusion[1,1], 'PS':confusion[0,1], 'PW':confusion[2,1], 'WW':confusion[2,2], 'WS':confusion[0,2], 'WP':confusion[1,2]}, epoch) # True Value --> Predicted Value
+    writer.add_scalars('Confusion_Matrix_Validation',{'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
     # writer.add_figure("Confusion Matrix Validation", fig, global_step=epoch)

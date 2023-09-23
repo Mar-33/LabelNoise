@@ -8,11 +8,13 @@ hyperparameter:
     learning_rate : 0.0001
     img_size : 256
     instance_noise_factor : 0
-    random_noise_factor : 
+    random_noise_factor : 0
+    erosion_iter : 0
+    dilation_iter : 0
     # num_imgs : now taking all
 
 model:
-    model_name : 'semantic_segmentation_model_phenobench_'
+    model_name : 'phenobench_'
     num_classes : 3
     encoder : 'efficientnet-b0'
     weights : None
