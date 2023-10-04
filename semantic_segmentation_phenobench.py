@@ -88,9 +88,10 @@ def dilation(masks, num_classes, device, iter, kernel_size = 3):
         mask[mask != sem_class] = 0
         mask[mask == sem_class] = 1
         mask = ((mask.cpu().numpy()) * 255).astype(np.uint8)
-        dilated = cv2.dilate(mask, kernel, iterations=iter)
         # ipdb.set_trace()
+        dilated = cv2.dilate(mask, kernel, iterations=iter)
         dilated_masks[idx] += dilated/255*sem_class
+    dilated_masks[dilated_masks >= 2] = 2
     return torch.tensor(dilated_masks).to(device) 
 
 def main():
