@@ -7,7 +7,7 @@ hyperparameter:
     batch_size : 16
     learning_rate : 0.0001
     img_size : 256
-    instance_noise_factor : 0
+    instance_noise_factor : 0.2
     random_noise_factor : 0
     erosion_iter : 0
     dilation_iter : 0
@@ -18,7 +18,7 @@ model:
     num_classes : 3
     encoder : 'efficientnet-b0'
     weights : None
-    seed : 4
+    seed : 123
 
 print:
     print_freq : 50

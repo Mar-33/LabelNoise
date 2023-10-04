@@ -119,7 +119,7 @@ def main():
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(in_factor*100) + '_rn_' + str(rn_factor*100) + '_di_' + str(dilation_iter*100) + '_er_' + str(erosion_iter*100) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
