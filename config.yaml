@@ -3,14 +3,21 @@ path:
     out_path : './results/'
 
 hyperparameter:
+    # Training Parameters:
     numEpochs : 100
     batch_size : 16
     learning_rate : 0.0001
     img_size : 256
-    instance_noise_factor : 0.2
+    # Noise Parameters:
+    instance_noise_factor : 0
     random_noise_factor : 0
+    dilation_first : True
     erosion_iter : 0
     dilation_iter : 0
+    kernel_size_di_er : 5
+    add_instances_min : 1
+    add_instances_max : 0
+    add_instances_radius : 20
     # num_imgs : now taking all
 
 model:

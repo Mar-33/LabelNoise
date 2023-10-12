@@ -59,7 +59,7 @@ def random_noise(masks, num_classes, device, factor):
     noisy_masks[noisy_masks>2] -= num_classes
     return noisy_masks
   
-def erosion(masks, num_classes, device, iter, kernel_size = 3):
+def erosion(masks, num_classes, device, iter, kernel_size):
   if iter == 0:
     return masks
   else:
@@ -76,7 +76,7 @@ def erosion(masks, num_classes, device, iter, kernel_size = 3):
         erosed_masks[idx] += erosed/255*sem_class
     return torch.tensor(erosed_masks).to(device)
 
-def dilation(masks, num_classes, device, iter, kernel_size = 3):
+def dilation(masks, num_classes, device, iter, kernel_size):
   if iter == 0:
     return masks
   else:
@@ -93,6 +93,33 @@ def dilation(masks, num_classes, device, iter, kernel_size = 3):
         dilated_masks[idx] += dilated/255*sem_class
     dilated_masks[dilated_masks >= 2] = 2
     return torch.tensor(dilated_masks).to(device) 
+
+def generate_random_oval(image_shape, max_radius):
+  h, w = image_shape
+  min_radius = max_radius/10
+  # Generate random ellipse parameters
+  center = np.random.randint(max_radius, h - max_radius, size=(2,))
+  axis1 = np.random.randint(min_radius, max_radius)
+  axis2 = np.random.randint(min_radius, max_radius/2)
+  axes = (axis1,axis2)
+  angle = np.random.randint(0, 180)
+  # Create Mask
+  mask = np.zeros((h, w), dtype=np.uint8)
+  cv2.ellipse(mask, tuple(center), tuple(axes), angle, 0, 360, 1, -1)
+  return mask
+
+def add_instances(masks,min_instances, max_instances, new_class, max_radius):
+  if max_instances == 0:
+    return masks
+  else:
+    noisy_label = masks.clone()
+    num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
+    for mask in range(noisy_label.shape[0]):
+      for i in range(num_instances[mask]):
+        random_shape = generate_random_oval(noisy_label[mask].shape, max_radius = max_radius)
+        # Füge die zufällige Form zur originalen Maske hinzu
+        noisy_label[mask][random_shape == 1] = new_class
+    return noisy_label
 
 def main():
   parser = argparse.ArgumentParser()
@@ -112,15 +139,20 @@ def main():
   img_size = cfg["hyperparameter"]["img_size"]
   in_factor = cfg["hyperparameter"]["instance_noise_factor"]
   rn_factor = cfg["hyperparameter"]['random_noise_factor']
+  dilation_first = cfg["hyperparameter"]['dilation_first']
   erosion_iter = cfg["hyperparameter"]['erosion_iter']
   dilation_iter = cfg["hyperparameter"]['dilation_iter']
+  kernel_size_di_er = cfg["hyperparameter"]['kernel_size_di_er']
+  ai_min = cfg["hyperparameter"]['add_instances_min']
+  ai_max = cfg["hyperparameter"]['add_instances_max']
+  ai_rad = cfg["hyperparameter"]['add_instances_radius']
 
   # num_imgs = now taking all
 
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_' + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -215,8 +247,13 @@ def main():
       
       # Label Augmentations:
       noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
-      noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter) # Dilation
-      noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter) # Erosion
+      noisy_masks = add_instances(noisy_masks, min_instances = ai_min, max_instances = ai_max, new_class = 2, max_radius = ai_rad)
+      if dilation_first == True:
+        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
+        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er) # Erosion
+      if dilation_first == False:
+        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er) # Erosion
+        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
       
       loss = loss_fn(predictions,noisy_masks.long().to(device))
