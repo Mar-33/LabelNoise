@@ -18,6 +18,8 @@ hyperparameter:
     add_instances_min : 0
     add_instances_max : 0
     add_instances_radius : 0
+    cut_instance_factor : 0.5
+    cut_factor : 0.5
     # num_imgs : now taking all
 
 model:

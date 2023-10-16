@@ -120,6 +120,47 @@ def add_instances(masks,min_instances, max_instances, new_class, max_radius):
         # Füge die zufällige Form zur originalen Maske hinzu
         noisy_label[mask][random_shape == 1] = new_class
     return noisy_label
+  
+def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
+  if cut_instance_factor == 0:
+    return masks
+  else:
+    masks = masks.cpu().numpy()
+    modified_masks = masks.copy()
+    for i, mask in enumerate(masks):
+      # Create a binary mask for the target class
+      target_mask = (mask == class2cut).astype(np.uint8)
+
+      # Find connected components and label each instance
+      num_labels, labeled_mask = cv2.connectedComponents(target_mask)
+      if num_labels > 1:
+        random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*cut_instance_factor)))
+
+        # Replace random_instances with new class label
+        for rand_inst in random_instance:
+          instance_mask = np.isin(labeled_mask, rand_inst)
+
+          y, x = np.where(instance_mask == 1)
+          min_y_index = y[np.argmin(y)]
+          max_y_index = y[np.argmax(y)]
+          min_x_index = x[np.argmin(x)]
+          max_x_index = x[np.argmax(x)]
+
+          height = int((max_y_index - min_y_index) * cut_factor)
+          width = int((max_x_index - min_x_index) * cut_factor)
+
+          my_sample = random.randint(0, 3)
+          if my_sample == 0:
+            instance_mask[min_y_index+height:, :] = False
+          elif my_sample == 1:
+            instance_mask[:,min_x_index+width:] = False
+          elif my_sample == 2:
+            instance_mask[:max_y_index-height, :] = False
+          elif my_sample == 3:
+            instance_mask[:,:max_x_index-width] = False
+
+          modified_masks[i] = modified_masks[i] * (~instance_mask).astype(int)
+    return torch.tensor(modified_masks).to(device)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -146,13 +187,15 @@ def main():
   ai_min = cfg["hyperparameter"]['add_instances_min']
   ai_max = cfg["hyperparameter"]['add_instances_max']
   ai_rad = cfg["hyperparameter"]['add_instances_radius']
+  cut_instance_factor = cfg["hyperparameter"]['cut_instance_factor']
+  cut_factor = cfg["hyperparameter"]['cut_factor']
 
   # num_imgs = now taking all
 
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -247,6 +290,7 @@ def main():
       
       # Label Augmentations:
       noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = cut_instance(noisy_masks, class2cut = 2, cut_instance_factor = 0.5, cut_factor = 0.5, device=device)
       noisy_masks = add_instances(noisy_masks, min_instances = ai_min, max_instances = ai_max, new_class = 2, max_radius = ai_rad)
       if dilation_first == True:
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
