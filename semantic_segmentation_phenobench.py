@@ -96,7 +96,7 @@ def dilation(masks, num_classes, device, iter, kernel_size):
 
 def generate_random_oval(image_shape, max_radius):
   h, w = image_shape
-  min_radius = max_radius/10
+  min_radius = np.ceil(max_radius/10)
   # Generate random ellipse parameters
   center = np.random.randint(max_radius, h - max_radius, size=(2,))
   axis1 = np.random.randint(min_radius, max_radius)
@@ -152,7 +152,7 @@ def main():
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_' + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -302,7 +302,7 @@ def main():
     # Tensorboard: Model Performance on Training Data:
     writer.add_scalars('IoU_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
     writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
-    writer.add_scalars('Precision_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
+    writer.add_scalars('Precision_Training',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
     writer.add_scalar('Accuracy_Training',accuracy ,epoch)
     writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
     # fig, ax = plt.subplots()

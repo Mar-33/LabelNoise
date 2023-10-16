@@ -14,10 +14,10 @@ hyperparameter:
     dilation_first : True
     erosion_iter : 0
     dilation_iter : 0
-    kernel_size_di_er : 5
-    add_instances_min : 1
+    kernel_size_di_er : 0
+    add_instances_min : 0
     add_instances_max : 0
-    add_instances_radius : 20
+    add_instances_radius : 0
     # num_imgs : now taking all
 
 model:
@@ -25,7 +25,7 @@ model:
     num_classes : 3
     encoder : 'efficientnet-b0'
     weights : None
-    seed : 123
+    seed : 4
 
 print:
     print_freq : 50
