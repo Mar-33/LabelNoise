@@ -196,7 +196,7 @@ def main():
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_' + str(datetime.date.today())
+  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
