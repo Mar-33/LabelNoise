@@ -187,6 +187,7 @@ def main():
   ai_min = cfg["hyperparameter"]['add_instances_min']
   ai_max = cfg["hyperparameter"]['add_instances_max']
   ai_rad = cfg["hyperparameter"]['add_instances_radius']
+  cut_class = cfg["hyperparameter"]['cut_class']
   cut_instance_factor = cfg["hyperparameter"]['cut_instance_factor']
   cut_factor = cfg["hyperparameter"]['cut_factor']
 
@@ -290,7 +291,7 @@ def main():
       
       # Label Augmentations:
       noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
-      noisy_masks = cut_instance(noisy_masks, class2cut = 2, cut_instance_factor = 0.5, cut_factor = 0.5, device=device)
+      noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
       noisy_masks = add_instances(noisy_masks, min_instances = ai_min, max_instances = ai_max, new_class = 2, max_radius = ai_rad)
       if dilation_first == True:
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
