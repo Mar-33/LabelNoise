@@ -18,9 +18,13 @@ hyperparameter:
     add_instances_min : 0
     add_instances_max : 0
     add_instances_radius : 0
-    cut_class : 2
-    cut_instance_factor : 0.5
-    cut_factor : 0.5
+    add_instances_green : 0 # minimum green value (between 0 and 250)
+    cut_class : 0
+    cut_instance_factor : 0
+    cut_factor : 0
+    leaf_noise_factor : 0
+    leaf_class : 0
+
     # num_imgs : now taking all
 
 model:
