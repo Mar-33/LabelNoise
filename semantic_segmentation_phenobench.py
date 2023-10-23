@@ -112,25 +112,26 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
   if max_instances == 0:
     return masks, images
   else:
-    imgs = images.clone()
-    noisy_label = masks.clone()
+    # noisy_label = masks
     num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
-    for mask in range(noisy_label.shape[0]):
+    for mask in range(masks.shape[0]):
       for i in range(num_instances[mask]):
-        random_shape = generate_random_oval(noisy_label[mask].shape, max_radius = max_radius)
+        random_shape += generate_random_oval(masks[mask].shape, max_radius = max_radius)
+        # random_shape = generate_random_oval(masks[mask].shape, max_radius = max_radius)
+
         # Füge die zufällige Form zur originalen Maske hinzu
-        noisy_label[mask][random_shape == 1] = new_class
-        # imgs[mask][0,:,:][random_shape == 1] = (imgs[mask][0,:,:][random_shape == 1]/255*(255-green_factor))
-        # imgs[mask][1,:,:][random_shape == 1] = (imgs[mask][1,:,:][random_shape == 1]/255*(255-green_factor)+green_factor)
-        # imgs[mask][2,:,:][random_shape == 1] = (imgs[mask][2,:,:][random_shape == 1]/255*(255-green_factor))
-    return noisy_label, imgs
+        masks[mask][random_shape != 0] = new_class
+        # images[mask][0,:,:][random_shape == 1] = (images[mask][0,:,:][random_shape == 1]/255*(255-green_factor))
+        # images[mask][1,:,:][random_shape == 1] = (images[mask][1,:,:][random_shape == 1]/255*(255-green_factor)+green_factor)
+        # images[mask][2,:,:][random_shape == 1] = (images[mask][2,:,:][random_shape == 1]/255*(255-green_factor))
+    return masks, images
   
 def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
   if cut_instance_factor == 0:
     return masks
   else:
-    masks = masks.cpu().numpy()
-    modified_masks = masks.copy()
+    # masks = masks.cpu().numpy()
+    # modified_masks = masks.copy()
     for i, mask in enumerate(masks):
       # Create a binary mask for the target class
       target_mask = (mask == class2cut).astype(np.uint8)
@@ -163,24 +164,21 @@ def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
           elif my_sample == 3:
             instance_mask[:,:max_x_index-width] = False
 
-          modified_masks[i] = modified_masks[i] * (~instance_mask).astype(int)
-    return torch.tensor(modified_masks).to(device)
+          masks[i] = masks[i] * (~instance_mask).astype(int)
+    return masks #torch.tensor(masks).to(device)
 
 def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
   if leaf_noise_factor == 0:
     return masks
   else:
     leaf = leafs.squeeze(1).long().to(device)
-    modified_masks = masks.clone().detach()
 
-    for i, mask in enumerate(modified_masks):
-      num_leafs = len(torch.unique(leaf[i]))
-      random_instance = random.sample(list(torch.unique(leafs[i])),int(np.ceil(num_leafs*leaf_noise_factor)))
-      for rand_inst in random_instance:
-        modified_masks[i][leaf[i]==rand_inst] = new_class
+    for i, mask in enumerate(masks):
+      leaf_ids = torch.unique(leaf[i]).cpu().detach().numpy()
+      random_instance = np.random.choice(leaf_ids,int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
+      masks[i][np.isin(leaf[i],random_instance)] = new_class
 
-    return torch.tensor(modified_masks).to(device)
-  
+    return masks # torch.tensor(masks).to(device)
 
 def main():
   parser = argparse.ArgumentParser()
@@ -312,10 +310,17 @@ def main():
       #   plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
       #   plt.colorbar()
       #   plt.show()
-        
+
       optimizer.zero_grad()
       noisy_masks = masks.squeeze(1)
       images = img.to(device)
+
+      # if epoch == 1:
+      #   for each in range(batch_idx):
+      #     plot_image = Image.fromarray((masks.squeeze(1)[each].numpy()/2*255).astype('uint8'))
+      #     plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
+      #     plt.colorbar()
+      #     plt.show()
 
       # Label Augmentations:
       noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
