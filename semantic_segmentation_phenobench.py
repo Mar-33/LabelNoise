@@ -38,7 +38,10 @@ def change_instance_class(masks, old_class, new_class, factor):
 
       # Find connected components and label each instance
       num_labels, labeled_mask = cv2.connectedComponents(target_mask)
-      random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
+
+      random_instance = np.random.choice(np.unique(labeled_mask)[1:],int(np.ceil(num_labels*factor)))
+
+      # random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
 
       # Replace random_instances with new class label
       instance_mask = np.isin(labeled_mask, random_instance)
@@ -115,15 +118,17 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
     # noisy_label = masks
     num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
     for mask in range(masks.shape[0]):
+      random_shape = np.zeros(masks.shape[1:])
       for i in range(num_instances[mask]):
+        # ipdb.set_trace()
         random_shape += generate_random_oval(masks[mask].shape, max_radius = max_radius)
         # random_shape = generate_random_oval(masks[mask].shape, max_radius = max_radius)
 
         # Füge die zufällige Form zur originalen Maske hinzu
         masks[mask][random_shape != 0] = new_class
-        # images[mask][0,:,:][random_shape == 1] = (images[mask][0,:,:][random_shape == 1]/255*(255-green_factor))
-        # images[mask][1,:,:][random_shape == 1] = (images[mask][1,:,:][random_shape == 1]/255*(255-green_factor)+green_factor)
-        # images[mask][2,:,:][random_shape == 1] = (images[mask][2,:,:][random_shape == 1]/255*(255-green_factor))
+        images[mask][0,:,:][random_shape != 0] = (images[mask][0,:,:][random_shape != 0]/255*(255-green_factor))
+        images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]/255*(255-green_factor)+green_factor)
+        images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
     return masks, images
   
 def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
@@ -132,7 +137,7 @@ def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
   else:
     # masks = masks.cpu().numpy()
     # modified_masks = masks.copy()
-    for i, mask in enumerate(masks):
+    for i, mask in enumerate(masks.cpu().numpy()):
       # Create a binary mask for the target class
       target_mask = (mask == class2cut).astype(np.uint8)
 
@@ -176,9 +181,8 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
     for i, mask in enumerate(masks):
       leaf_ids = torch.unique(leaf[i]).cpu().detach().numpy()
       random_instance = np.random.choice(leaf_ids,int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
-      masks[i][np.isin(leaf[i],random_instance)] = new_class
-
-    return masks # torch.tensor(masks).to(device)
+      masks[i][ torch.isin(leaf[i],torch.tensor(random_instance).to(device))] = new_class
+    return masks
 
 def main():
   parser = argparse.ArgumentParser()
@@ -335,6 +339,17 @@ def main():
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
 
+      for each in range(batch_idx):
+        plot_image = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
+        plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
+        plt.colorbar()
+        plt.show()
+
+        plot_mask = Image.fromarray((noisy_masks[each].numpy()/2*255).astype('uint8'))
+        plt.imshow(plot_mask, interpolation='nearest', cmap = 'viridis')
+        plt.colorbar()
+        plt.show()
+
       predictions = model(images.to(device))
 
 
@@ -376,8 +391,8 @@ def main():
 
     # Prints to Terminal
     print('\n-------------------- Evaluation on Training Set --------------------')
-    print('Confusion Matrix:')
-    print(confusion)
+    # print('Confusion Matrix:')
+    # print(confusion)
     training_time = np.round(((time.time() - start_time)*100)/100)
     print(f"Epoch [{epoch+1}/{numEpochs}], Training Time Epoch: {int(training_time/(24*3600))}d {int(training_time/3600) % 24}h {int(training_time/60) % 60}min {int(training_time) % 60}s, Loss(mean):{losses_mean}, Loss(min):{min_train_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
 
@@ -437,8 +452,8 @@ def main():
 
       # Prints to Terminal
       print('\n-------------------- Evaluation on Validation Set --------------------')
-      print('Confusion Matrix:')
-      print(confusion)
+      # print('Confusion Matrix:')
+      # print(confusion)
       validation_time = np.round(((time.time() - start_val_time)*100)/100)
       print(f"Epoch [{epoch+1}/{numEpochs}], Validation Time Epoch: {int(validation_time/(24*3600))}d {int(validation_time/3600) % 24}h {int(validation_time/60) % 60}min {int(validation_time % 60)}s, Val_Loss(mean):{val_losses_mean}, Val_Loss(min):{min_val_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
       print('--------------------------------------------------------------------\n')
