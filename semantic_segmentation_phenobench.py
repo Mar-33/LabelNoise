@@ -120,15 +120,13 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
     for mask in range(masks.shape[0]):
       random_shape = np.zeros(masks.shape[1:])
       for i in range(num_instances[mask]):
-        # ipdb.set_trace()
         random_shape += generate_random_oval(masks[mask].shape, max_radius = max_radius)
-        # random_shape = generate_random_oval(masks[mask].shape, max_radius = max_radius)
-
         # Füge die zufällige Form zur originalen Maske hinzu
         masks[mask][random_shape != 0] = new_class
-        images[mask][0,:,:][random_shape != 0] = (images[mask][0,:,:][random_shape != 0]/255*(255-green_factor))
-        images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]/255*(255-green_factor)+green_factor)
-        images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
+        # images[mask][0,:,:][random_shape != 0] = (images[mask][0,:,:][random_shape != 0]/255*(255-green_factor))
+      # ipdb.set_trace()
+      images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
+        # images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
     return masks, images
   
 def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
@@ -339,16 +337,16 @@ def main():
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
 
-      for each in range(batch_idx):
-        plot_image = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
-        plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
-        plt.colorbar()
-        plt.show()
+      # for each in range(batch_idx):
+      #   plot_image = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
+      #   plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
+      #   plt.colorbar()
+      #   plt.show()
 
-        plot_mask = Image.fromarray((noisy_masks[each].numpy()/2*255).astype('uint8'))
-        plt.imshow(plot_mask, interpolation='nearest', cmap = 'viridis')
-        plt.colorbar()
-        plt.show()
+      #   plot_mask = Image.fromarray((noisy_masks[each].numpy()/2*255).astype('uint8'))
+      #   plt.imshow(plot_mask, interpolation='nearest', cmap = 'viridis')
+      #   plt.colorbar()
+      #   plt.show()
 
       predictions = model(images.to(device))
 
