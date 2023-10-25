@@ -257,7 +257,11 @@ def main():
 
   transform = {'image': transform_img, 'mask': transform_mask}
 
-  pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train', leaf_instances=True)
+  if leaf_noise_factor > 0:
+    pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train', leaf_instances=True)
+  else:
+    pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train', leaf_instances=False)
+
   pheno_val_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='val')
 
   print('Number of train images: ',pheno_train_dataset.__len__())
@@ -416,7 +420,7 @@ def main():
       min_val_loss = float('inf')
 
 
-      for batch_idx, (img, masks) in enumerate(valloader):
+      for batch_idx, (img, masks, _) in enumerate(valloader):
         start_val_time = time.time()
 
         val_predictions = model(img.to(device))

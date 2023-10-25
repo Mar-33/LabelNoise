@@ -1,6 +1,7 @@
 from phenobench import PhenoBench
 from pprint import pprint
 from PIL import Image
+import torch
 
 class PhenoBenchDataset(object):
     def __init__(self, root, transform=None, split=None, data=None, leaf_instances = False):
@@ -33,4 +34,4 @@ class PhenoBenchDataset(object):
 
         if self.leaf_instances:
           return image, mask, leaf
-        else: return image, mask
+        else: return image, mask, torch.tensor([])
