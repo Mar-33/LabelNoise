@@ -253,7 +253,7 @@ def main():
   transform_img = transforms.Compose([transforms.Resize(size=(img_size, img_size)),
                                       transforms.ToTensor()])
   transform_mask = transforms.Compose([transforms.Resize(size=(img_size, img_size),
-                                        interpolation = transforms.InterpolationMode.NEAREST), transforms.ToTensor()])
+                                        interpolation = transforms.InterpolationMode.NEAREST), transforms.PILToTensor()])
 
   transform = {'image': transform_img, 'mask': transform_mask}
 
@@ -385,7 +385,7 @@ def main():
     recall = np.diag(confusion) / np.sum(confusion, axis=1)
     precision = np.diag(confusion) / np.sum(confusion, axis=0)
     accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
-    iou_evaluator = MulticlassJaccardIndex(num_classes=3, average=None)
+    iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
     iou = iou_evaluator(torch.tensor(predicted_labels),torch.tensor( true_labels))
 
     losses_mean = losses/(batch_idx+1)
@@ -449,7 +449,7 @@ def main():
       recall = np.diag(confusion) / np.sum(confusion, axis=1)
       precision = np.diag(confusion) / np.sum(confusion, axis=0)
       accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
-      iou_evaluator = MulticlassJaccardIndex(num_classes=3, average=None)
+      iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
       iou = iou_evaluator(torch.tensor(val_predicted_labels),torch.tensor(val_true_labels))
 
       # Prints to Terminal
