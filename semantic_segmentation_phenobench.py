@@ -363,31 +363,31 @@ def main():
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
 
 
-      # Anzahl der Spalten und Zeilen im Subplot
-      num_rows = 2  # Anzahl der Zeilen
-      num_cols = 4  # Anzahl der Spalten
+      # # Anzahl der Spalten und Zeilen im Subplot
+      # num_rows = 2  # Anzahl der Zeilen
+      # num_cols = 4  # Anzahl der Spalten
 
-      # Erstellen des Subplots
-      fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
+      # # Erstellen des Subplots
+      # fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
 
-      # Iteration durch die Bilder und Anzeige in den Subplots
-      for each in range(4):
-          # Zeile 0 für plot_image, Zeile 1 für plot_mask
-          ax = axes[0, each]
-          plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-          ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-          ax.set_title(f'Image {each}')
-          ax.axis('off')
+      # # Iteration durch die Bilder und Anzeige in den Subplots
+      # for each in range(4):
+      #     # Zeile 0 für plot_image, Zeile 1 für plot_mask
+      #     ax = axes[0, each]
+      #     plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+      #     ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+      #     ax.set_title(f'Image {each}')
+      #     ax.axis('off')
 
-          ax = axes[1, each]
-          plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-          ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-          ax.set_title(f'Mask {each}')
-          ax.axis('off')
+      #     ax = axes[1, each]
+      #     plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+      #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+      #     ax.set_title(f'Mask {each}')
+      #     ax.axis('off')
 
-      # Anzeigen des Subplots
-      plt.tight_layout()
-      plt.show()
+      # # Anzeigen des Subplots
+      # plt.tight_layout()
+      # plt.show()
 
 
       predictions = model(images.to(device))
