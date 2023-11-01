@@ -4,7 +4,7 @@ from PIL import Image
 import ipdb
 import torch
 
-class PhenoBenchDataset(object):
+class Dataset(object):
     def __init__(self, root, transform=None, split=None, data=None, leaf_instances = False):
         self.transform = transform
         self.root = root

@@ -11,7 +11,6 @@ import numpy as np
 from PIL import Image
 import torch.nn as nn
 import torch.optim as optim
-import dataloader_phenobench ###
 import matplotlib.pyplot as plt
 import segmentation_models_pytorch as smp
 import torchvision.transforms as transforms
@@ -25,27 +24,29 @@ from torchmetrics.classification import MulticlassJaccardIndex
 # from google.colab import drive
 # drive.mount('/content/drive')
 
-def change_instance_class(masks, old_class, new_class, factor):
+def instance_noise(masks, old_class, new_class, factor):
   if factor == 0:
       return masks
   else:
     masks = masks.numpy()
     modified_masks = np.zeros_like(masks)
     for i, mask in enumerate(masks):
-      mask = mask
-      # Create a binary mask for the target class
-      target_mask = (mask == old_class).astype(np.uint8)
+      if old_class in mask:
+        print('yes')
+        # Create a binary mask for the target class
+        target_mask = (mask == old_class).astype(np.uint8)
 
-      # Find connected components and label each instance
-      num_labels, labeled_mask = cv2.connectedComponents(target_mask)
+        # Find connected components and label each instance
+        num_labels, labeled_mask = cv2.connectedComponents(target_mask)
 
-      random_instance = np.random.choice(np.unique(labeled_mask)[1:],int(np.ceil(num_labels*factor)))
+        random_instance = np.random.choice(np.unique(labeled_mask)[1:],int(np.ceil(num_labels*factor)))
 
-      # random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
+        # random_instance = random.sample(list(np.unique(labeled_mask)[1:]),int(np.ceil(num_labels*factor)))
 
-      # Replace random_instances with new class label
-      instance_mask = np.isin(labeled_mask, random_instance)
-      modified_masks[i] = np.where(instance_mask, new_class, mask)
+        # Replace random_instances with new class label
+        instance_mask = np.isin(labeled_mask, random_instance)
+        modified_masks[i] = np.where(instance_mask, new_class, mask)
+      else: modified_masks[i] = mask
     return torch.from_numpy(modified_masks)
 
 def random_noise(masks, num_classes, device, factor):
@@ -57,45 +58,46 @@ def random_noise(masks, num_classes, device, factor):
     noise_level[noise_level != 0] = 1
 
     noise = torch.randint(1,num_classes,(masks.shape)).to(device) * noise_level
-
     noisy_masks = masks.to(device) + noise.to(device)
-    noisy_masks[noisy_masks>2] -= num_classes
+    noisy_masks[noisy_masks>(num_classes-1)] -= num_classes
+
     return noisy_masks
   
-def erosion(masks, num_classes, device, iter, kernel_size):
+def erosion(masks, num_classes, device, iter, kernel_size, er_dil_factor):
   if iter == 0:
     return masks
   else:
     erosed_masks = np.zeros((masks.shape))
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    samples = np.random.choice(np.arange(0, masks.shape[0]), int(np.ceil(masks.shape[0]*er_dil_factor)), replace=False)
     for idx in range(masks.shape[0]):
-      for sem_class in range(1, num_classes):
-        mask = masks[idx].clone()
-        mask[mask != sem_class] = 0
-        mask[mask == sem_class] = 1
-        mask = ((mask.cpu().numpy()) * 255).astype(np.uint8)
-        erosed = cv2.erode(mask, kernel, iterations=iter)
-        # ipdb.set_trace()
-        erosed_masks[idx] += erosed/255*sem_class
+      if idx in samples:
+        for sem_class in np.unique(masks[idx])[1:]:
+          mask = (masks[idx] == sem_class)*255
+          mask = (mask.cpu().numpy()).astype(np.uint8)
+          erosed = cv2.erode(mask, kernel, iterations=iter)
+          erosed_masks[idx][erosed != 0] = sem_class
+      else:
+        erosed_masks[idx] = masks[idx]
     return torch.tensor(erosed_masks).to(device)
 
-def dilation(masks, num_classes, device, iter, kernel_size):
+def dilation(masks, num_classes, device, iter, kernel_size, er_dil_factor):
   if iter == 0:
     return masks
   else:
     dilated_masks = np.zeros((masks.shape))
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    samples = np.random.choice(np.arange(0, masks.shape[0]), int(np.ceil(masks.shape[0]*er_dil_factor)), replace=False)
     for idx in range(masks.shape[0]):
-      for sem_class in range(1, num_classes):
-        mask = masks[idx].clone()
-        mask[mask != sem_class] = 0
-        mask[mask == sem_class] = 1
-        mask = ((mask.cpu().numpy()) * 255).astype(np.uint8)
-        # ipdb.set_trace()
-        dilated = cv2.dilate(mask, kernel, iterations=iter)
-        dilated_masks[idx] += dilated/255*sem_class
-    dilated_masks[dilated_masks >= 2] = 2
-    return torch.tensor(dilated_masks).to(device) 
+      if idx in samples:
+        for sem_class in np.unique(masks[idx])[1:]:
+          mask = (masks[idx] == sem_class)*255
+          mask = (mask.cpu().numpy()).astype(np.uint8)
+          dilated = cv2.dilate(mask, kernel, iterations=iter)
+          dilated_masks[idx][dilated != 0] = sem_class
+      else:
+        dilated_masks[idx] = masks[idx]
+    return torch.tensor(dilated_masks).to(device)
 
 def generate_random_oval(image_shape, max_radius):
   h, w = image_shape
@@ -178,7 +180,7 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
 
     for i, mask in enumerate(masks):
       leaf_ids = torch.unique(leaf[i]).cpu().detach().numpy()
-      random_instance = np.random.choice(leaf_ids,int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
+      random_instance = np.random.choice(leaf_ids[1:],int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
       masks[i][ torch.isin(leaf[i],torch.tensor(random_instance).to(device))] = new_class
     return masks
 
@@ -198,19 +200,29 @@ def main():
   batch_size = cfg["hyperparameter"]["batch_size"]
   learning_rate = cfg["hyperparameter"]["learning_rate"]
   img_size = cfg["hyperparameter"]["img_size"]
+  # Instance Noise
   in_factor = cfg["hyperparameter"]["instance_noise_factor"]
+  in_old_class = cfg["hyperparameter"]["instance_noise_old_class"]
+  in_new_class = cfg["hyperparameter"]["instance_noise_new_class"]
+  # Random Noise
   rn_factor = cfg["hyperparameter"]['random_noise_factor']
+  # Dilation and Erosion
+  er_dil_factor = cfg["hyperparameter"]['er_dil_factor']
   dilation_first = cfg["hyperparameter"]['dilation_first']
   erosion_iter = cfg["hyperparameter"]['erosion_iter']
   dilation_iter = cfg["hyperparameter"]['dilation_iter']
   kernel_size_di_er = cfg["hyperparameter"]['kernel_size_di_er']
+  # Add Instances
+  ai_class = cfg["hyperparameter"]['add_instances_class']
   ai_min = cfg["hyperparameter"]['add_instances_min']
   ai_max = cfg["hyperparameter"]['add_instances_max']
   ai_rad = cfg["hyperparameter"]['add_instances_radius']
   ai_green = cfg["hyperparameter"]['add_instances_green']
+  # Cut Instances
   cut_class = cfg["hyperparameter"]['cut_class']
   cut_instance_factor = cfg["hyperparameter"]['cut_instance_factor']
   cut_factor = cfg["hyperparameter"]['cut_factor']
+  # Leaf Noise
   leaf_noise_factor = cfg["hyperparameter"]['leaf_noise_factor']
   leaf_class = cfg['hyperparameter']['leaf_class']
   # num_imgs = now taking all
@@ -218,7 +230,8 @@ def main():
   # Model
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
-  model_name = cfg["model"]["model_name"] + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lf_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
+  my_dataset = cfg["model"]["model_name"]
+  model_name = my_dataset + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lf_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -250,6 +263,12 @@ def main():
   torch.cuda.manual_seed_all(seed)
 
   ############### Create Dataset Instance and Dataloader ###############
+  ## Import Dataloader for dataset:
+  if my_dataset == 'phenobench_':
+    import dataloader_phenobench as my_dataloader
+  if my_dataset == 'cropandweed_': 
+    import dataloader_cropandweed as my_dataloader
+
   transform_img = transforms.Compose([transforms.Resize(size=(img_size, img_size)),
                                       transforms.ToTensor()])
   transform_mask = transforms.Compose([transforms.Resize(size=(img_size, img_size),
@@ -257,19 +276,21 @@ def main():
 
   transform = {'image': transform_img, 'mask': transform_mask}
 
+
   if leaf_noise_factor > 0:
-    pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train', leaf_instances=True)
+    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=True)
   else:
-    pheno_train_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='train', leaf_instances=False)
+    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False)
 
-  pheno_val_dataset = dataloader_phenobench.PhenoBenchDataset(img_path, transform=transform, split='val')
+  val_dataset = my_dataloader.Dataset(img_path, transform=transform, split='val')
+  
 
-  print('Number of train images: ',pheno_train_dataset.__len__())
-  print('Number of val images:   ',pheno_val_dataset.__len__())
+  print('Number of train images: ',train_dataset.__len__())
+  print('Number of val images:   ',val_dataset.__len__())
 
   # Create a DataLoader instance for training
-  trainloader = DataLoader(pheno_train_dataset, batch_size=batch_size, shuffle=True)
-  valloader = DataLoader(pheno_val_dataset, batch_size=1, shuffle=False)
+  trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+  valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
   ########################## Create the model ##########################
   # Check if CUDA (GPU) is available
@@ -316,41 +337,58 @@ def main():
       #   plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
       #   plt.colorbar()
       #   plt.show()
-
       optimizer.zero_grad()
-      noisy_masks = masks.squeeze(1)
+      noisy_masks = masks.squeeze(1).clone()
       images = img.to(device)
 
-      # if epoch == 1:
-      #   for each in range(batch_idx):
-      #     plot_image = Image.fromarray((masks.squeeze(1)[each].numpy()/2*255).astype('uint8'))
-      #     plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
-      #     plt.colorbar()
-      #     plt.show()
 
-      # Label Augmentations:
-      noisy_masks = change_instance_class(noisy_masks, old_class = 1, new_class = 2, factor = in_factor) # Instance Noise (Plant2Weed)
-      noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
-      noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = 2, max_radius = ai_rad, green_factor = ai_green)
-      noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
-      if dilation_first == True:
-        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
-        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er) # Erosion
-      if dilation_first == False:
-        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er) # Erosion
-        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er) # Dilation
-      noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+      # for each in range(batch_size):
 
-      # for each in range(batch_idx):
-      #   plot_image = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
+      #   plot_image = Image.fromarray((masks.squeeze(1)[each].numpy()/(num_classes-1)*255).astype('uint8'))
       #   plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
       #   plt.colorbar()
       #   plt.show()
 
-      #   plot_mask = Image.fromarray((noisy_masks[each].numpy()/2*255).astype('uint8'))
-      #   plt.imshow(plot_mask, interpolation='nearest', cmap = 'viridis')
-      #   plt.colorbar()
-      #   plt.show()
+      # Label Augmentations:
+      noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
+      noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
+      noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
+      if dilation_first == True:
+        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Dilation
+        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
+      if dilation_first == False:
+        noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
+        noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
+      noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+
+
+      # Anzahl der Spalten und Zeilen im Subplot
+      num_rows = 2  # Anzahl der Zeilen
+      num_cols = 4  # Anzahl der Spalten
+
+      # Erstellen des Subplots
+      fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
+
+      # Iteration durch die Bilder und Anzeige in den Subplots
+      for each in range(4):
+          # Zeile 0 für plot_image, Zeile 1 für plot_mask
+          ax = axes[0, each]
+          plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+          ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          ax.set_title(f'Image {each}')
+          ax.axis('off')
+
+          ax = axes[1, each]
+          plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+          ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          ax.set_title(f'Mask {each}')
+          ax.axis('off')
+
+      # Anzeigen des Subplots
+      plt.tight_layout()
+      plt.show()
+
 
       predictions = model(images.to(device))
 

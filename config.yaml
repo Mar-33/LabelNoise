@@ -8,27 +8,35 @@ hyperparameter:
     batch_size : 16
     learning_rate : 0.0001
     img_size : 256
-    # Noise Parameters:
+    # Instance Noise
     instance_noise_factor : 0
+    instance_noise_old_class : 0
+    instance_noise_new_class : 0
+    # Random Noise
     random_noise_factor : 0
-    dilation_first : True
+    # Dilation and Erosion
+    er_dil_factor : 0
+    dilation_first : False
     erosion_iter : 0
     dilation_iter : 0
     kernel_size_di_er : 0
+    # Add Instances
+    add_instances_class : 0
     add_instances_min : 0
     add_instances_max : 0
     add_instances_radius : 0
     add_instances_green : 0 # minimum green value (between 0 and 250)
+    # Cut Instances
     cut_class : 0
     cut_instance_factor : 0
     cut_factor : 0
+    # Leaf Noise
     leaf_noise_factor : 0
     leaf_class : 0
-
     # num_imgs : now taking all
 
 model:
-    model_name : 'phenobench_'
+    model_name : 'phenobench_' # 'cropandweed_' # 
     num_classes : 3
     encoder : 'efficientnet-b0'
     weights : None
