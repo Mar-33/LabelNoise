@@ -72,13 +72,13 @@ def erosion(masks, num_classes, device, iter, kernel_size, er_dil_factor):
     samples = np.random.choice(np.arange(0, masks.shape[0]), int(np.ceil(masks.shape[0]*er_dil_factor)), replace=False)
     for idx in range(masks.shape[0]):
       if idx in samples:
-        for sem_class in np.unique(masks[idx])[1:]:
+        for sem_class in np.unique(masks[idx].cpu().numpy())[1:]:
           mask = (masks[idx] == sem_class)*255
           mask = (mask.cpu().numpy()).astype(np.uint8)
           erosed = cv2.erode(mask, kernel, iterations=iter)
           erosed_masks[idx][erosed != 0] = sem_class
       else:
-        erosed_masks[idx] = masks[idx]
+        erosed_masks[idx] = masks[idx].cpu().numpy()
     return torch.tensor(erosed_masks).to(device)
 
 def dilation(masks, num_classes, device, iter, kernel_size, er_dil_factor):
@@ -90,13 +90,13 @@ def dilation(masks, num_classes, device, iter, kernel_size, er_dil_factor):
     samples = np.random.choice(np.arange(0, masks.shape[0]), int(np.ceil(masks.shape[0]*er_dil_factor)), replace=False)
     for idx in range(masks.shape[0]):
       if idx in samples:
-        for sem_class in np.unique(masks[idx])[1:]:
+        for sem_class in np.unique(masks[idx].cpu().numpy())[1:]:
           mask = (masks[idx] == sem_class)*255
           mask = (mask.cpu().numpy()).astype(np.uint8)
           dilated = cv2.dilate(mask, kernel, iterations=iter)
           dilated_masks[idx][dilated != 0] = sem_class
       else:
-        dilated_masks[idx] = masks[idx]
+        dilated_masks[idx] = masks[idx].cpu().numpy()
     return torch.tensor(dilated_masks).to(device)
 
 def generate_random_oval(image_shape, max_radius):
