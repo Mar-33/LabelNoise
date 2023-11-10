@@ -9,15 +9,12 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
   if leaf_noise_factor == 0:
     return masks
   else:
-    # ipdb.set_trace()
     # leaf = torch.tensor(leafs).long().to(device)
-    leaf = leafs
-
     for i, mask in enumerate(masks):
-      leaf_ids = torch.unique(leaf[i]).cpu().detach().numpy()
+      leaf_ids = torch.unique(leafs[i]).cpu().detach().numpy()
       if leaf_ids.size > 1:
         random_instance = np.random.choice(leaf_ids[1:],int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
-        masks[i][ torch.isin(leaf[i],torch.tensor(random_instance).to(device))] = new_class
+        masks[i][ torch.isin(leafs[i],torch.tensor(random_instance).to(device))] = new_class
     return masks
 
 class Dataset(object):

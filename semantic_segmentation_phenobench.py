@@ -355,7 +355,6 @@ def main():
       noisy_masks = masks.squeeze(1).clone()
       images = img.to(device)
       
-      ipdb.set_trace()
       # for each in range(batch_size):
 
       #   plot_image = Image.fromarray((masks.squeeze(1)[each].numpy()/(num_classes-1)*255).astype('uint8'))
