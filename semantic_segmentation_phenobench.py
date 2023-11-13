@@ -118,14 +118,29 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
     return masks, images
   else:
     num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
+    # get mean and std rgb values for weed of the batch:
+    r_std_new, r_mean_new = torch.std_mean(images[:,0,:,:][masks==2])
+    g_std_new, g_mean_new = torch.std_mean(images[:,1,:,:][masks==2])
+    b_std_new, b_mean_new = torch.std_mean(images[:,2,:,:][masks==2])
+
     for mask in range(masks.shape[0]):
-      random_shape = np.zeros(masks.shape[1:])
+      random_shape = torch.zeros(masks.shape[1:])
       for i in range(num_instances[mask]):
         random_shape += generate_random_oval(masks[mask].shape, max_radius = max_radius)
         # Füge die zufällige Form zur originalen Maske hinzu
-        masks[mask][random_shape != 0] = new_class
+        masks[mask][random_shape != 0] = new_class # [(random_shape != 0) & (masks[mask] == 0)]
+      
+      images[mask][0,:,:][(random_shape != 0)] = (images[mask][0,:,:][(random_shape != 0)] - torch.mean(images[mask][0,:,:][(random_shape != 0)])) * r_std_new/2/torch.std(images[mask][0,:,:][(random_shape != 0)]) + r_mean_new
+      images[mask][1,:,:][(random_shape != 0)] = (images[mask][1,:,:][(random_shape != 0)] - torch.mean(images[mask][1,:,:][(random_shape != 0)])) * g_std_new/2/torch.std(images[mask][1,:,:][(random_shape != 0)]) + g_mean_new
+      images[mask][2,:,:][(random_shape != 0)] = (images[mask][2,:,:][(random_shape != 0)] - torch.mean(images[mask][2,:,:][(random_shape != 0)])) * b_std_new/2/torch.std(images[mask][2,:,:][(random_shape != 0)]) + b_mean_new
+
+      
+      # images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
+      # images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
+
+
       # images[mask][0,:,:][random_shape != 0] = (images[mask][0,:,:][random_shape != 0]/255*(255-green_factor))
-      images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
+      # images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
       # images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
     return masks, images
   
@@ -375,29 +390,41 @@ def main():
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
 
-      # # Anzahl der Spalten und Zeilen im Subplot
-      # num_rows = 2  # Anzahl der Zeilen
-      # num_cols = 4  # Anzahl der Spalten
+      # Anzahl der Spalten und Zeilen im Subplot
+      num_rows = 2  # Anzahl der Zeilen
+      num_cols = 4  # Anzahl der Spalten
 
-      # # Erstellen des Subplots
-      # fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
+      # Erstellen des Subplots
+      fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
 
-      # # Iteration durch die Bilder und Anzeige in den Subplots
+      # Iteration durch die Bilder und Anzeige in den Subplots
       
-      # for each in range(masks.shape[0]):
-      #     # Zeile 0 für plot_image, Zeile 1 für plot_mask
-      #     ax = axes[0, each]
-      #     plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-      #     ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-      #     ax.set_title(f'Image {each}')
-      #     ax.axis('off')
+      for each in range(masks.shape[0]):
+          # # Zeile 0 für plot_image, Zeile 1 für plot_mask
+          # ax = axes[0, each]
+          # plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+          # ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          # ax.set_title(f'Image {each}')
+          # ax.axis('off')
 
-      #     ax = axes[1, each]
+          # ax = axes[1, each]
+          # plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+          # ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          # ax.set_title(f'Mask {each}')
+          # ax.axis('off')
+
+      #     ## Images
+      #     ax = axes[0, each]
       #     plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
       #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
       #     ax.set_title(f'Mask {each}')
       #     ax.axis('off')
 
+      #     ax = axes[1, each]
+      #     plot_mask = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
+      #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+      #     ax.set_title(f'Mask {each}')
+      #     ax.axis('off')
       # # Anzeigen des Subplots
       # plt.tight_layout()
       # plt.show()
