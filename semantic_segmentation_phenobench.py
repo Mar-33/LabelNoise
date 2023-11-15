@@ -310,7 +310,7 @@ def main():
     #     plt.colorbar()
     #     plt.show()
   else:
-    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False)
+    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False, leaf_class = None, leaf_noise_factor = None, device = None)
 
 
   val_dataset = my_dataloader.Dataset(img_path, transform=transform, split='val')
@@ -390,29 +390,16 @@ def main():
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
       noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
 
-      # Anzahl der Spalten und Zeilen im Subplot
-      num_rows = 2  # Anzahl der Zeilen
-      num_cols = 4  # Anzahl der Spalten
+      # # Anzahl der Spalten und Zeilen im Subplot
+      # num_rows = 2  # Anzahl der Zeilen
+      # num_cols = 4  # Anzahl der Spalten
 
-      # Erstellen des Subplots
-      fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
+      # # Erstellen des Subplots
+      # fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
 
-      # Iteration durch die Bilder und Anzeige in den Subplots
-      
-      for each in range(masks.shape[0]):
-          # # Zeile 0 für plot_image, Zeile 1 für plot_mask
-          # ax = axes[0, each]
-          # plot_image = Image.fromarray((masks.squeeze(1)[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-          # ax.imshow(plot_image, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-          # ax.set_title(f'Image {each}')
-          # ax.axis('off')
-
-          # ax = axes[1, each]
-          # plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-          # ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-          # ax.set_title(f'Mask {each}')
-          # ax.axis('off')
-
+      # # Iteration durch die Bilder und Anzeige in den Subplots
+    
+      # for each in range(masks.shape[0]):
       #     ## Images
       #     ax = axes[0, each]
       #     plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
@@ -429,9 +416,7 @@ def main():
       # plt.tight_layout()
       # plt.show()
 
-
       predictions = model(images.to(device))
-
 
       loss = loss_fn(predictions,noisy_masks.long().to(device))
       loss.backward()
