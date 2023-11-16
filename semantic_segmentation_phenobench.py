@@ -360,7 +360,7 @@ def main():
     min_train_loss = float('inf')
 
 
-    for batch_idx, (img, masks, leafs) in enumerate(trainloader):
+    for batch_idx, (img, masks) in enumerate(trainloader):
       # if epoch == 1:
       #   plot_image = Image.fromarray(np.transpose((img[0].numpy()*255).astype('uint8'),(1,2,0)))
       #   plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
@@ -483,7 +483,7 @@ def main():
       min_val_loss = float('inf')
 
 
-      for batch_idx, (img, masks, _) in enumerate(valloader):
+      for batch_idx, (img, masks) in enumerate(valloader):
         start_val_time = time.time()
 
         val_predictions = model(img.to(device))

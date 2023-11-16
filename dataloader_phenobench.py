@@ -52,5 +52,5 @@ class Dataset(object):
               mask = leaf_noise(mask, leaf, new_class = self.leaf_class , leaf_noise_factor = self.leaf_noise_factor, device = self.device)
 
         if self.leaf_instances:
-          return image, mask, leaf
-        else: return image, mask, torch.tensor([])
+          return image, mask
+        else: return image, mask
