@@ -50,7 +50,5 @@ class Dataset(object):
             if self.leaf_instances:
               leaf = self.transform['mask'](leaf)
               mask = leaf_noise(mask, leaf, new_class = self.leaf_class , leaf_noise_factor = self.leaf_noise_factor, device = self.device)
-
-        if self.leaf_instances:
-          return image, mask
-        else: return image, mask
+        
+        return image, mask
