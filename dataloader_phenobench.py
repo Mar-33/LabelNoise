@@ -14,7 +14,7 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
       leaf_ids = torch.unique(leafs[i]).cpu().detach().numpy()
       if leaf_ids.size > 1:
         random_instance = np.random.choice(leaf_ids[1:],int(np.ceil(len(leaf_ids)*leaf_noise_factor)))
-        masks[i][ torch.isin(leafs[i],torch.tensor(random_instance).to(device))] = new_class
+        masks[i][ torch.isin(leafs[i],torch.tensor(random_instance))] = new_class
     return masks
 
 class Dataset(object):
