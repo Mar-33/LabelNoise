@@ -434,39 +434,38 @@ def main():
         # print('approx_time:', (np.round(((time.time() - start_time)/(batch_idx+1)*(len(trainloader-batch_idx))*100)/100)))
 
 ############################ Evaluation on Training Set ###########################
-
-      # Convert predicted logits to class labels
-      predicted_batch_labels = predictions.argmax(dim=1).cpu().numpy()
-      # Convert masks to class labels
-      true_batch_labels = masks.squeeze(1).cpu().numpy()
-      # Collect true and predicted labels
-      true_labels.extend(true_batch_labels.flatten())
-      predicted_labels.extend(predicted_batch_labels.flatten())
-
-
-    confusion = confusion_matrix(true_labels, predicted_labels, labels=np.arange(num_classes))
-    recall = np.diag(confusion) / np.sum(confusion, axis=1)
-    precision = np.diag(confusion) / np.sum(confusion, axis=0)
-    accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
-    iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
-    iou = iou_evaluator(torch.tensor(predicted_labels),torch.tensor( true_labels))
+      if leaf_noise_factor == 0:
+        # Convert predicted logits to class labels
+        predicted_batch_labels = predictions.argmax(dim=1).cpu().numpy()
+        # Convert masks to class labels
+        true_batch_labels = masks.squeeze(1).cpu().numpy()
+        # Collect true and predicted labels
+        true_labels.extend(true_batch_labels.flatten())
+        predicted_labels.extend(predicted_batch_labels.flatten())
 
     losses_mean = losses/(batch_idx+1)
 
+    if leaf_noise_factor == 0:
+      confusion = confusion_matrix(true_labels, predicted_labels, labels=np.arange(num_classes))
+      recall = np.diag(confusion) / np.sum(confusion, axis=1)
+      precision = np.diag(confusion) / np.sum(confusion, axis=0)
+      accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
+      iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
+      iou = iou_evaluator(torch.tensor(predicted_labels),torch.tensor( true_labels))
 
-    # Prints to Terminal
-    print('\n-------------------- Evaluation on Training Set --------------------')
-    # print('Confusion Matrix:')
-    # print(confusion)
-    training_time = np.round(((time.time() - start_time)*100)/100)
-    print(f"Epoch [{epoch+1}/{numEpochs}], Training Time Epoch: {int(training_time/(24*3600))}d {int(training_time/3600) % 24}h {int(training_time/60) % 60}min {int(training_time) % 60}s, Loss(mean):{losses_mean}, Loss(min):{min_train_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
+      # Prints to Terminal
+      print('\n-------------------- Evaluation on Training Set --------------------')
+      # print('Confusion Matrix:')
+      # print(confusion)
+      training_time = np.round(((time.time() - start_time)*100)/100)
+      print(f"Epoch [{epoch+1}/{numEpochs}], Training Time Epoch: {int(training_time/(24*3600))}d {int(training_time/3600) % 24}h {int(training_time/60) % 60}min {int(training_time) % 60}s, Loss(mean):{losses_mean}, Loss(min):{min_train_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
 
-    # Tensorboard: Model Performance on Training Data:
-    writer.add_scalars('IoU_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
-    writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
-    writer.add_scalars('Precision_Training',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
-    writer.add_scalar('Accuracy_Training',accuracy ,epoch)
-    writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
+      # Tensorboard: Model Performance on Training Data:
+      writer.add_scalars('IoU_Training',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
+      writer.add_scalars('Recall_Training',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
+      writer.add_scalars('Precision_Training',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
+      writer.add_scalar('Accuracy_Training',accuracy ,epoch)
+      writer.add_scalars('Confusion_Matrix_Training',  {'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
     # writer.add_figure("Confusion_Matrix_Training", fig, global_step=epoch)
