@@ -119,9 +119,9 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
   else:
     num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
     # get mean and std rgb values for weed of the batch:
-    r_std_new, r_mean_new = torch.std_mean(images[:,0,:,:][masks==2])
+    # r_std_new, r_mean_new = torch.std_mean(images[:,0,:,:][masks==2])
     g_std_new, g_mean_new = torch.std_mean(images[:,1,:,:][masks==2])
-    b_std_new, b_mean_new = torch.std_mean(images[:,2,:,:][masks==2])
+    # b_std_new, b_mean_new = torch.std_mean(images[:,2,:,:][masks==2])
 
     for mask in range(masks.shape[0]):
       random_shape = torch.zeros(masks.shape[1:])
@@ -130,9 +130,9 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
         # Füge die zufällige Form zur originalen Maske hinzu
         masks[mask][random_shape != 0] = new_class # [(random_shape != 0) & (masks[mask] == 0)]
       
-      images[mask][0,:,:][(random_shape != 0)] = (images[mask][0,:,:][(random_shape != 0)] - torch.mean(images[mask][0,:,:][(random_shape != 0)])) * r_std_new/2/torch.std(images[mask][0,:,:][(random_shape != 0)]) + r_mean_new
-      images[mask][1,:,:][(random_shape != 0)] = (images[mask][1,:,:][(random_shape != 0)] - torch.mean(images[mask][1,:,:][(random_shape != 0)])) * g_std_new/2/torch.std(images[mask][1,:,:][(random_shape != 0)]) + g_mean_new
-      images[mask][2,:,:][(random_shape != 0)] = (images[mask][2,:,:][(random_shape != 0)] - torch.mean(images[mask][2,:,:][(random_shape != 0)])) * b_std_new/2/torch.std(images[mask][2,:,:][(random_shape != 0)]) + b_mean_new
+      # images[mask][0,:,:][(random_shape != 0)] = (images[mask][0,:,:][(random_shape != 0)] - torch.mean(images[mask][0,:,:][(random_shape != 0)])) * r_std_new/2/torch.std(images[mask][0,:,:][(random_shape != 0)]) + r_mean_new
+      images[mask][1,:,:][(random_shape != 0)] = (images[mask][1,:,:][(random_shape != 0)] - torch.mean(images[mask][1,:,:][(random_shape != 0)])) * g_std_new/torch.std(images[mask][1,:,:][(random_shape != 0)]) + g_mean_new
+      # images[mask][2,:,:][(random_shape != 0)] = (images[mask][2,:,:][(random_shape != 0)] - torch.mean(images[mask][2,:,:][(random_shape != 0)])) * b_std_new/2/torch.std(images[mask][2,:,:][(random_shape != 0)]) + b_mean_new
 
       
       # images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
