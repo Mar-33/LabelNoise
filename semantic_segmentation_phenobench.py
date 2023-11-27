@@ -32,7 +32,6 @@ def instance_noise(masks, old_class, new_class, factor):
     modified_masks = np.zeros_like(masks)
     for i, mask in enumerate(masks):
       if old_class in mask:
-        print('yes')
         # Create a binary mask for the target class
         target_mask = (mask == old_class).astype(np.uint8)
 
