@@ -526,13 +526,18 @@ def main():
     # Losses
     writer.add_scalar('LR_Training',np.array(scheduler.get_last_lr()[0]),epoch)
     writer.add_scalars('Losses',  {'Loss_Training':losses_mean,'Loss_Evaluation':val_losses_mean}, epoch)
+    if my_dataset == 'phenobench_':
+      # Model Performance on Validation Data:
+      writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
+      writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
+      writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
+      writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
+    if my_dataset == 'cropandweed_': 
+      writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2]}, 'Soy':iou[0], 'Sunflower':iou[1], 'Potato':iou[2]}, 'Pea':iou[0], 'Bean':iou[1], 'Pumpkin':iou[2], 'Weed':iou[2]}, epoch)
+      writer.add_scalars('Recall_Validation',  {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2]}, 'Soy':iou[0], 'Sunflower':iou[1], 'Potato':iou[2]}, 'Pea':iou[0], 'Bean':iou[1], 'Pumpkin':iou[2], 'Weed':iou[2]}, epoch)
+      writer.add_scalars('Precision_Validation',  {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2]}, 'Soy':iou[0], 'Sunflower':iou[1], 'Potato':iou[2]}, 'Pea':iou[0], 'Bean':iou[1], 'Pumpkin':iou[2], 'Weed':iou[2]}, epoch)
+      writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
 
-    # Model Performance on Validation Data:
-    writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
-    writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
-    writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
-    writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
-    writer.add_scalars('Confusion_Matrix_Validation',{'SS':confusion[0][0], 'SP':confusion[1][0], 'SW':confusion[2][0], 'PP':confusion[1][1], 'PS':confusion[0][1], 'PW':confusion[2][1], 'WW':confusion[2][2], 'WS':confusion[0][2], 'WP':confusion[1][2]}, epoch) # True Value --> Predicted Value
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
     # writer.add_figure("Confusion Matrix Validation", fig, global_step=epoch)
