@@ -150,7 +150,7 @@ def cut_instance(masks, class2cut, cut_instance_factor, cut_factor, device):
     # masks = masks.cpu().numpy()
     # modified_masks = masks.copy()
     for i, mask in enumerate(masks.cpu().numpy()):
-      # Create a binary mask for the target class
+      # Create a binary mask for target class
       target_mask = (mask == class2cut).astype(np.uint8)
 
       # Find connected components and label each instance
