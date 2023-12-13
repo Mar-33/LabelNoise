@@ -526,17 +526,17 @@ def main():
     # Losses
     writer.add_scalar('LR_Training',np.array(scheduler.get_last_lr()[0]),epoch)
     writer.add_scalars('Losses',  {'Loss_Training':losses_mean,'Loss_Evaluation':val_losses_mean}, epoch)
-    if my_dataset == 'phenobench_':
-      # Model Performance on Validation Data:
-      writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
-      writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
-      writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
-      writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
-    if my_dataset == 'cropandweed_': 
-      writer.add_scalars('IoU_Validation', {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2], 'Soy':iou[3], 'Sunflower':iou[4], 'Potato':iou[5], 'Pea':iou[6], 'Bean':iou[7], 'Pumpkin':iou[8], 'Weed':iou[9]}, epoch)
-      writer.add_scalars('Recall_Validation',   {'Soil':recall[0], 'Maize':recall[1], 'SugarBeet':recall[2], 'Soy':recall[3], 'Sunflower':recall[4], 'Potato':recall[5], 'Pea':recall[6], 'Bean':recall[7], 'Pumpkin':recall[8], 'Weed':recall[9]}, epoch)
-      writer.add_scalars('Precision_Validation',   {'Soil':precision[0], 'Maize':precision[1], 'SugarBeet':precision[2], 'Soy':precision[3], 'Sunflower':precision[4], 'Potato':precision[5], 'Pea':precision[6], 'Bean':precision[7], 'Pumpkin':precision[8], 'Weed':precision[9]}, epoch)
-      writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
+    # if my_dataset == 'phenobench_':
+    # Model Performance on Validation Data:
+    writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
+    writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
+    writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
+    writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
+    # if my_dataset == 'cropandweed_': 
+    #   writer.add_scalars('IoU_Validation', {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2], 'Soy':iou[3], 'Sunflower':iou[4], 'Potato':iou[5], 'Pea':iou[6], 'Bean':iou[7], 'Pumpkin':iou[8], 'Weed':iou[9]}, epoch)
+    #   writer.add_scalars('Recall_Validation',   {'Soil':recall[0], 'Maize':recall[1], 'SugarBeet':recall[2], 'Soy':recall[3], 'Sunflower':recall[4], 'Potato':recall[5], 'Pea':recall[6], 'Bean':recall[7], 'Pumpkin':recall[8], 'Weed':recall[9]}, epoch)
+    #   writer.add_scalars('Precision_Validation',   {'Soil':precision[0], 'Maize':precision[1], 'SugarBeet':precision[2], 'Soy':precision[3], 'Sunflower':precision[4], 'Potato':precision[5], 'Pea':precision[6], 'Bean':precision[7], 'Pumpkin':precision[8], 'Weed':precision[9]}, epoch)
+    #   writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
 
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
