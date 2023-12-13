@@ -33,7 +33,11 @@ class Dataset(object):
         mask = imageio.imread(self.mask_paths[idx])
         mask += 1
         mask[mask == 10] = 0
-
+        ipdb.set_trace()
+        # change class values only to classes soil [0], plant [1], weed [2]
+        mask[(mask > 0) & (mask < 9)] = 1
+        mask[mask == 9] = 2
+        ipdb.set_trace()
         if self.transform:
             image = self.transform['image'](image)
             mask = Image.fromarray(mask)
