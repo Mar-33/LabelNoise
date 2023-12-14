@@ -471,7 +471,7 @@ def main():
 
 ########################### Evaluation on Validation Set ##########################
     val_losses_mean = np.nan
-    if (epoch+1) % eval_interval:
+    if (epoch+1) % eval_interval == 0:
       with torch.no_grad():
         model.eval()
 
