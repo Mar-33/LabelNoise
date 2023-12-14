@@ -253,7 +253,7 @@ def main():
   # Prints and Save:
   print_freq = cfg["print"]["print_freq"]
   save_freq = cfg["print"]["save_freq"]
-
+  eval_interval = cfg["print"]["eval_interval"]
   # Paths
   img_path = cfg["path"]["img_path"]
   out_path = cfg["path"]["out_path"] + model_name + '/'
@@ -470,73 +470,76 @@ def main():
     # # writer.add_figure("Confusion_Matrix_Training", fig, global_step=epoch)
 
 ########################### Evaluation on Validation Set ##########################
-    with torch.no_grad():
-      model.eval()
+    val_losses_mean = np.nan
+    if (epoch+1) % eval_interval:
+      with torch.no_grad():
+        model.eval()
 
-      val_true_labels = []
-      val_predicted_labels = []
-
-
-      val_losses = 0
-      min_val_loss = float('inf')
+        val_true_labels = []
+        val_predicted_labels = []
 
 
-      for batch_idx, (img, masks) in enumerate(valloader):
-        start_val_time = time.time()
+        val_losses = 0
+        min_val_loss = float('inf')
 
-        val_predictions = model(img.to(device))
-        masks_squeezed = masks.squeeze(1).long().to(device)
 
-        val_loss = loss_fn(val_predictions,masks_squeezed)
-        val_losses += val_loss.detach().cpu().numpy()
-        if val_loss < min_val_loss:
-          min_val_loss = val_loss
+        for batch_idx, (img, masks) in enumerate(valloader):
+          start_val_time = time.time()
 
-        # if batch_idx % print_freq == 0:
-        #   batch_val_time = np.round(((time.time() - start_val_time)/(batch_idx+1)*(len(valloader)-(batch_idx+1))*100)/100)
-        #   print(f"Epoch [{epoch+1}/{numEpochs}], Batch [{batch_idx+1}/{len(trainloader)}], Time left for Epoch: {int(batch_val_time/(24*3600))}d {int(batch_val_time/3600) % 24}h {int(batch_val_time/60) % 60}min {int(batch_val_time % 60)}s, Loss: {loss.item():.4f}")
+          val_predictions = model(img.to(device))
+          masks_squeezed = masks.squeeze(1).long().to(device)
 
-        # Convert predicted logits to class labels
-        val_predicted_batch_labels = val_predictions.argmax(dim=1).cpu().numpy()
-        # Convert masks to class labels
-        val_true_batch_labels = masks.squeeze(1).cpu().numpy()
-        # Collect true and predicted labels
-        val_true_labels.extend(val_true_batch_labels.flatten())
-        val_predicted_labels.extend(val_predicted_batch_labels.flatten())
+          val_loss = loss_fn(val_predictions,masks_squeezed)
+          val_losses += val_loss.detach().cpu().numpy()
+          if val_loss < min_val_loss:
+            min_val_loss = val_loss
 
-      val_losses_mean = val_losses/(batch_idx+1)
+          # if batch_idx % print_freq == 0:
+          #   batch_val_time = np.round(((time.time() - start_val_time)/(batch_idx+1)*(len(valloader)-(batch_idx+1))*100)/100)
+          #   print(f"Epoch [{epoch+1}/{numEpochs}], Batch [{batch_idx+1}/{len(trainloader)}], Time left for Epoch: {int(batch_val_time/(24*3600))}d {int(batch_val_time/3600) % 24}h {int(batch_val_time/60) % 60}min {int(batch_val_time % 60)}s, Loss: {loss.item():.4f}")
 
-      confusion = confusion_matrix(val_true_labels, val_predicted_labels, labels=np.arange(num_classes))
-      recall = np.diag(confusion) / np.sum(confusion, axis=1)
-      precision = np.diag(confusion) / np.sum(confusion, axis=0)
-      accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
-      iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
-      iou = iou_evaluator(torch.tensor(val_predicted_labels),torch.tensor(val_true_labels))
+          # Convert predicted logits to class labels
+          val_predicted_batch_labels = val_predictions.argmax(dim=1).cpu().numpy()
+          # Convert masks to class labels
+          val_true_batch_labels = masks.squeeze(1).cpu().numpy()
+          # Collect true and predicted labels
+          val_true_labels.extend(val_true_batch_labels.flatten())
+          val_predicted_labels.extend(val_predicted_batch_labels.flatten())
 
-      # Prints to Terminal
-      print('\n-------------------- Evaluation on Validation Set --------------------')
-      # print('Confusion Matrix:')
-      # print(confusion)
-      validation_time = np.round(((time.time() - start_val_time)*100)/100)
-      print(f"Epoch [{epoch+1}/{numEpochs}], Validation Time Epoch: {int(validation_time/(24*3600))}d {int(validation_time/3600) % 24}h {int(validation_time/60) % 60}min {int(validation_time % 60)}s, Val_Loss(mean):{val_losses_mean}, Val_Loss(min):{min_val_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
-      print('--------------------------------------------------------------------\n')
+        val_losses_mean = val_losses/(batch_idx+1)
+
+        confusion = confusion_matrix(val_true_labels, val_predicted_labels, labels=np.arange(num_classes))
+        recall = np.diag(confusion) / np.sum(confusion, axis=1)
+        precision = np.diag(confusion) / np.sum(confusion, axis=0)
+        accuracy = np.sum(np.diag(confusion)) / np.sum(confusion)
+        iou_evaluator = MulticlassJaccardIndex(num_classes=num_classes, average=None)
+        iou = iou_evaluator(torch.tensor(val_predicted_labels),torch.tensor(val_true_labels))
+
+        # Prints to Terminal
+        print('\n-------------------- Evaluation on Validation Set --------------------')
+        # print('Confusion Matrix:')
+        # print(confusion)
+        validation_time = np.round(((time.time() - start_val_time)*100)/100)
+        print(f"Epoch [{epoch+1}/{numEpochs}], Validation Time Epoch: {int(validation_time/(24*3600))}d {int(validation_time/3600) % 24}h {int(validation_time/60) % 60}min {int(validation_time % 60)}s, Val_Loss(mean):{val_losses_mean}, Val_Loss(min):{min_val_loss}, Accuracy: {accuracy*100:.4f}, Recall: {recall*100}, Precision: {precision*100}, IoU: {iou*100}")
+        print('--------------------------------------------------------------------\n')
 
 ############################### Writing Scalars and Saving the Model ##############################
 
-    # Losses
-    writer.add_scalar('LR_Training',np.array(scheduler.get_last_lr()[0]),epoch)
-    writer.add_scalars('Losses',  {'Loss_Training':losses_mean,'Loss_Evaluation':val_losses_mean}, epoch)
-    # if my_dataset == 'phenobench_':
-    # Model Performance on Validation Data:
-    writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
-    writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
-    writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
-    writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
+      # if my_dataset == 'phenobench_':
+      # Model Performance on Validation Data:
+      writer.add_scalars('IoU_Validation',  {'Soil':iou[0], 'Plant':iou[1], 'Weed':iou[2]}, epoch)
+      writer.add_scalars('Recall_Validation',  {'Soil':recall[0], 'Plant':recall[1], 'Weed':recall[2]}, epoch)
+      writer.add_scalars('Precision_Validation',  {'Soil':precision[0], 'Plant':precision[1], 'Weed':precision[2]}, epoch)
+      writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
     # if my_dataset == 'cropandweed_': 
     #   writer.add_scalars('IoU_Validation', {'Soil':iou[0], 'Maize':iou[1], 'SugarBeet':iou[2], 'Soy':iou[3], 'Sunflower':iou[4], 'Potato':iou[5], 'Pea':iou[6], 'Bean':iou[7], 'Pumpkin':iou[8], 'Weed':iou[9]}, epoch)
     #   writer.add_scalars('Recall_Validation',   {'Soil':recall[0], 'Maize':recall[1], 'SugarBeet':recall[2], 'Soy':recall[3], 'Sunflower':recall[4], 'Potato':recall[5], 'Pea':recall[6], 'Bean':recall[7], 'Pumpkin':recall[8], 'Weed':recall[9]}, epoch)
     #   writer.add_scalars('Precision_Validation',   {'Soil':precision[0], 'Maize':precision[1], 'SugarBeet':precision[2], 'Soy':precision[3], 'Sunflower':precision[4], 'Potato':precision[5], 'Pea':precision[6], 'Bean':precision[7], 'Pumpkin':precision[8], 'Weed':precision[9]}, epoch)
     #   writer.add_scalar('Accuracy_Validation',accuracy ,epoch)
+
+    # Losses
+    writer.add_scalar('LR_Training',np.array(scheduler.get_last_lr()[0]),epoch)
+    writer.add_scalars('Losses',  {'Loss_Training':losses_mean,'Loss_Evaluation':val_losses_mean}, epoch)
 
     # fig, ax = plt.subplots()
     # ConfusionMatrixDisplay(confusion).plot(ax=ax)
