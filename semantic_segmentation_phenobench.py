@@ -286,7 +286,7 @@ def main():
   ## Import Dataloader for dataset:
   if my_dataset == 'phenobench_':
     import dataloader_phenobench as my_dataloader
-  if my_dataset == 'cropandweed_': 
+  if my_dataset == 'cropandweed_' or 'sugarbeetandweed_': 
     import dataloader_cropandweed as my_dataloader
 
   transform_img = transforms.Compose([transforms.Resize(size=(img_size, img_size)),
