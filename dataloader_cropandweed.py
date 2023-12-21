@@ -20,8 +20,8 @@ class Dataset(object):
         self.leaf_instances = False
 
     
-# Classes:  0: Soil   1: Maize   2: Sugar Beet   3: Soy       4: Sunflower   
-#           5: Potato 6: Pea     7: Bean         8: Pumpkin   9: Weed
+# Classes:  1: Soil   2: Maize   3: Sugar Beet   4: Soy       5: Sunflower   
+#           6: Potato 7: Pea     8: Bean         9: Pumpkin   10: Weed
 
     def __len__(self):
         return len(self.img_paths)
@@ -36,6 +36,9 @@ class Dataset(object):
         # change class values only to classes soil [0], plant [1], weed [2]
         mask[(mask > 0) & (mask < 9)] = 1
         mask[mask == 9] = 2
+
+# Classes:  0: Soil   1: Maize   2: Sugar Beet   3: Soy       4: Sunflower   
+#           5: Potato 6: Pea     7: Bean         8: Pumpkin   9: Weed
 
         if self.transform:
             image = self.transform['image'](image)
