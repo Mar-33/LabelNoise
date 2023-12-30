@@ -20,8 +20,17 @@ class Dataset(object):
         self.leaf_instances = False
 
     
-# Classes:  1: Soil   2: Maize   3: Sugar Beet   4: Soy       5: Sunflower   
-#           6: Potato 7: Pea     8: Bean         9: Pumpkin   10: Weed
+# Classes:  
+# 0: 'Maize'
+# 1: 'Sugar beet'
+# 2: 'Soy'
+# 3: 'Sunflower'
+# 4: 'Potato'
+# 5: 'Pea'
+# 6: 'Bean'
+# 7: 'Pumpkin'
+# 8: 'Weed'
+# 9: 'Soil'
 
     def __len__(self):
         return len(self.img_paths)
@@ -31,11 +40,13 @@ class Dataset(object):
         image = Image.open(self.img_paths[idx])
         # Load Mask and correct classes
         mask = imageio.imread(self.mask_paths[idx])
+        ipdb.set_trace()
         mask += 1
         mask[mask == 10] = 0
         # change class values only to classes soil [0], plant [1], weed [2]
         mask[(mask > 0) & (mask < 9)] = 1
         mask[mask == 9] = 2
+        ipdb.set_trace()
 
 # Classes:  0: Soil   1: Maize   2: Sugar Beet   3: Soy       4: Sunflower   
 #           5: Potato 6: Pea     7: Bean         8: Pumpkin   9: Weed
