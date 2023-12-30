@@ -40,13 +40,11 @@ class Dataset(object):
         image = Image.open(self.img_paths[idx])
         # Load Mask and correct classes
         mask = imageio.imread(self.mask_paths[idx])
-        ipdb.set_trace()
         mask += 1
         mask[mask == 10] = 0
         # change class values only to classes soil [0], plant [1], weed [2]
         mask[(mask > 0) & (mask < 9)] = 1
         mask[mask == 9] = 2
-        ipdb.set_trace()
 
 # Classes:  0: Soil   1: Maize   2: Sugar Beet   3: Soy       4: Sunflower   
 #           5: Potato 6: Pea     7: Bean         8: Pumpkin   9: Weed
