@@ -119,7 +119,7 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
     num_instances = np.random.randint(min_instances,max_instances,masks.shape[0])
     # get mean and std rgb values for weed of the batch:
     # r_std_new, r_mean_new = torch.std_mean(images[:,0,:,:][masks==2])
-    g_std_new, g_mean_new = torch.std_mean(images[:,1,:,:][masks==2])
+    # g_std_new, g_mean_new = torch.std_mean(images[:,1,:,:][masks==2])
     # b_std_new, b_mean_new = torch.std_mean(images[:,2,:,:][masks==2])
 
     for mask in range(masks.shape[0]):
@@ -131,11 +131,11 @@ def add_instances(masks, images, min_instances, max_instances, new_class, max_ra
       
 
       # images[mask][0,:,:][(random_shape != 0)] = (images[mask][0,:,:][(random_shape != 0)] - torch.mean(images[mask][0,:,:][(random_shape != 0)])) * r_std_new/torch.std(images[mask][0,:,:][(random_shape != 0)]) + r_mean_new
-      images[mask][1,:,:][(random_shape != 0)] = (images[mask][1,:,:][(random_shape != 0)] - torch.mean(images[mask][1,:,:][(random_shape != 0)])) * g_std_new/torch.std(images[mask][1,:,:][(random_shape != 0)]) + g_mean_new
+      # images[mask][1,:,:][(random_shape != 0)] = (images[mask][1,:,:][(random_shape != 0)] - torch.mean(images[mask][1,:,:][(random_shape != 0)])) * g_std_new/torch.std(images[mask][1,:,:][(random_shape != 0)]) + g_mean_new
       # images[mask][2,:,:][(random_shape != 0)] = (images[mask][2,:,:][(random_shape != 0)] - torch.mean(images[mask][2,:,:][(random_shape != 0)])) * b_std_new/torch.std(images[mask][2,:,:][(random_shape != 0)]) + b_mean_new
 
       # ONLY GREEN VALUE:
-      # images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
+      images[mask][1,:,:][random_shape != 0] = (images[mask][1,:,:][random_shape != 0]*(255-green_factor)+green_factor)/255
       # images[mask][2,:,:][random_shape != 0] = (images[mask][2,:,:][random_shape != 0]/255*(255-green_factor/2))
 
 
@@ -247,7 +247,7 @@ def main():
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
   my_dataset = cfg["model"]["model_name"]
-  model_name = my_dataset + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
+  model_name = my_dataset + "2_" + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
