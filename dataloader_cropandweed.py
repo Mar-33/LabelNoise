@@ -18,7 +18,6 @@ class Dataset(object):
         self.mask_paths = glob.glob(os.path.join(self.root, self.split, 'CropsOrWeed9', '*.png'))
         self.mask_paths.sort()
         self.leaf_instances = False
-
     
 # Classes:  
 # 0: 'Maize'

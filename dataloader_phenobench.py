@@ -18,7 +18,7 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
     return masks
 
 class Dataset(object):
-    def __init__(self, root, transform=None, split=None, data=None, leaf_instances = False, leaf_class = None, leaf_noise_factor = None, device = None):
+    def __init__(self, root, transform=None, split=None, leaf_instances = False, leaf_class = None, leaf_noise_factor = None, device = None):
         self.transform = transform
         self.root = root
         self.split = split
@@ -27,16 +27,17 @@ class Dataset(object):
         self.leaf_class = leaf_class
         self.leaf_noise_factor = leaf_noise_factor
         self.device = device
+        # self.data = data
         if self.leaf_instances:
            self.data = PhenoBench(self.root, target_types=["semantics", 'leaf_instances'], split = self.split)
-        else: self.data = PhenoBench(self.root, target_types=["semantics"], split = self.split)
+        else:
+          self.data = PhenoBench(self.root, target_types=["semantics"], split = self.split)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         # self.data = PhenoBench(self.root, target_types=["semantics"], split = self.split) #target_types=["semantics", "plant_instances", "leaf_instances"]
-
         image = self.data[idx]['image']
         mask = self.data[idx]['semantics']
         mask[mask > 2] -= 2

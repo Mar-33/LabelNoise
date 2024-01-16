@@ -287,7 +287,7 @@ def main():
   ## Import Dataloader for dataset:
   if my_dataset == 'phenobench_':
     import dataloader_phenobench as my_dataloader
-  if my_dataset == 'cropandweed_' or 'sugarbeetandweed_': 
+  if my_dataset == 'cropandweed_' or my_dataset == 'sugarbeetandweed_': 
     import dataloader_cropandweed as my_dataloader
 
   transform_img = transforms.Compose([transforms.Resize(size=(img_size, img_size)),
@@ -297,21 +297,10 @@ def main():
 
   transform = {'image': transform_img, 'mask': transform_mask}
 
-
   if leaf_noise_factor > 0:
     train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=True, leaf_class = leaf_class, leaf_noise_factor = leaf_noise_factor, device = device)
-    # for idx in range(train_dataset.__len__()):
-    #   modified_semantics = leaf_noise(train_dataset.data[idx]['semantics'], train_dataset.data[idx]['leaf_instances'], new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
-    #   ipdb.set_trace()
-    #   train_dataset.data[idx]['semantics'] = modified_semantics
-    #   if idx < 4:
-    #     plot_image = Image.fromarray((train_dataset.data[idx]['semantics']/(num_classes-1)*255).astype('uint8'))
-    #     plt.imshow(plot_image, interpolation='nearest', cmap = 'viridis')
-    #     plt.colorbar()
-    #     plt.show()
   else:
     train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False, leaf_class = None, leaf_noise_factor = None, device = None)
-
 
   val_dataset = my_dataloader.Dataset(img_path, transform=transform, split='val')
   
