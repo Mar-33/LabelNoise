@@ -6,6 +6,7 @@ import torch
 import numpy as np
 
 def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
+  print('WRONG FUNCTION!!!!!!!!!!!!!!!!!!!')
   if leaf_noise_factor == 0:
     return masks
   else:
@@ -30,6 +31,8 @@ class Dataset(object):
         # self.data = data
         if self.leaf_instances:
            self.data = PhenoBench(self.root, target_types=["semantics", 'leaf_instances'], split = self.split)
+        if self.leaf_noise_factor > 0:
+           self.data = PhenoBench(self.root, target_types=["semantics", 'leaf_instances'], split = self.split)
         else:
           self.data = PhenoBench(self.root, target_types=["semantics"], split = self.split)
 
@@ -42,8 +45,12 @@ class Dataset(object):
         mask = self.data[idx]['semantics']
         mask[mask > 2] -= 2
         mask = Image.fromarray(mask)
-        if self.leaf_instances:
-          leaf = Image.fromarray(self.data[idx]['leaf_instances'])
+        ########## Reverse Noise #########
+        # if self.leaf_instances:
+        #   leaf = Image.fromarray(self.data[idx]['leaf_instances'])
+        if self.leaf_noise_factor > 0:
+          leaf = Image.fromarray(self.data[idx]['leaf_instances'])  ## delete after
+          leaf = self.transform['mask'](leaf) ## delete after
 
         if self.transform:
             image = self.transform['image'](image)
@@ -52,4 +59,7 @@ class Dataset(object):
               leaf = self.transform['mask'](leaf)
               mask = leaf_noise(mask, leaf, new_class = self.leaf_class , leaf_noise_factor = self.leaf_noise_factor, device = self.device)
         
-        return image, mask
+        if self.leaf_noise_factor > 0:
+           return image, mask, leaf
+        else:
+           return image, mask, torch.empty(0)
