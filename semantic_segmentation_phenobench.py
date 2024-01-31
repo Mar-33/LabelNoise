@@ -28,7 +28,7 @@ def instance_noise(masks, old_class, new_class, factor):
   if factor == 0:
       return masks
   else:
-    masks = masks.numpy()
+    masks = masks.cpu().numpy()
     modified_masks = np.zeros_like(masks)
     for i, mask in enumerate(masks):
       if old_class in mask:
