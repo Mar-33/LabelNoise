@@ -70,10 +70,9 @@ def sub_instance_noise(masks, old_class, new_class, factor, iter=2):
           # Replace random_instances with new class label
           instance_mask = np.isin(labeled_mask, random_instance)
           instance_mask = (instance_mask*255).astype(np.uint8)
-          dilated = cv2.dilate(instance_mask, kernel, iterations=iter)
-          instance_mask = (dilated == 255).astype(np.uint8)
+          dilated = cv2.dilate(instance_mask, kernel, iterations=iter+2)
 
-          modified_masks[i] = np.where(instance_mask != 0, new_class, mask)
+          modified_masks[i] = np.where((dilated == 255) & (mask == old_class), new_class, mask)
       else: modified_masks[i] = mask
     return torch.from_numpy(modified_masks)
 
@@ -447,9 +446,9 @@ def main():
       #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
       #     ax.set_title(f'Mask {each}')
       #     ax.axis('off')
-      # # Anzeigen des Subplots
-      # plt.tight_layout()
-      # plt.show()
+      # Anzeigen des Subplots
+      plt.tight_layout()
+      plt.show()
 
       predictions = model(images.to(device))
 
