@@ -48,6 +48,35 @@ def instance_noise(masks, old_class, new_class, factor):
       else: modified_masks[i] = mask
     return torch.from_numpy(modified_masks)
 
+def sub_instance_noise(masks, old_class, new_class, factor, iter=2):
+  if factor == 0:
+      return masks
+  else:
+    masks = masks.cpu().numpy()
+    modified_masks = np.zeros_like(masks)
+    kernel = np.ones((3, 3), np.uint8)
+
+    for i, mask in enumerate(masks):
+      if old_class in mask:
+        # Create a binary mask for the target class
+        target_mask = (mask == old_class)
+        target_mask = (target_mask*255).astype(np.uint8)
+        erosed = cv2.erode(target_mask, kernel, iterations=iter)
+        target_mask = (erosed == 255).astype(np.uint8)
+        num_labels, labeled_mask = cv2.connectedComponents(target_mask)
+        if num_labels > 1:
+          random_instance = np.random.choice(np.unique(labeled_mask)[1:],int(np.ceil(num_labels*factor)))
+
+          # Replace random_instances with new class label
+          instance_mask = np.isin(labeled_mask, random_instance)
+          instance_mask = (instance_mask*255).astype(np.uint8)
+          dilated = cv2.dilate(instance_mask, kernel, iterations=iter)
+          instance_mask = (dilated == 255).astype(np.uint8)
+
+          modified_masks[i] = np.where(instance_mask != 0, new_class, mask)
+      else: modified_masks[i] = mask
+    return torch.from_numpy(modified_masks)
+
 def random_noise(masks, num_classes, device, factor):
   if factor == 0:
     return masks
@@ -246,7 +275,7 @@ def main():
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
   my_dataset = cfg["model"]["model_name"]
-  model_name = my_dataset + "2r_" + encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
+  model_name = my_dataset + "2r_" + encoder + '_seed_' + str(my_seed) + '_sin_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
 
@@ -391,35 +420,36 @@ def main():
         noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
       noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
-      noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      #noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = sub_instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
       noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
 
 
-      # # Anzahl der Spalten und Zeilen im Subplot
-      # num_rows = 2  # Anzahl der Zeilen
-      # num_cols = 4  # Anzahl der Spalten
+      # Anzahl der Spalten und Zeilen im Subplot
+      num_rows = 2  # Anzahl der Zeilen
+      num_cols = 4  # Anzahl der Spalten
 
-      # # Erstellen des Subplots
-      # fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
+      # Erstellen des Subplots
+      fig, axes = plt.subplots(num_rows, num_cols, figsize=(10, 5))
 
-      # # Iteration durch die Bilder und Anzeige in den Subplots
+      # Iteration durch die Bilder und Anzeige in den Subplots
     
-      # for each in range(masks.shape[0]):
-      #     ## Images
-      #     ax = axes[0, each]
-      #     plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
-      #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-      #     ax.set_title(f'Mask {each}')
-      #     ax.axis('off')
+      for each in range(masks.shape[0]):
+          ## Images
+          ax = axes[0, each]
+          plot_mask = Image.fromarray((noisy_masks[each].numpy() / (num_classes - 1) * 255).astype('uint8'))
+          ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          ax.set_title(f'Mask {each}')
+          ax.axis('off')
 
-      #     ax = axes[1, each]
-      #     plot_mask = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
-      #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
-      #     ax.set_title(f'Mask {each}')
-      #     ax.axis('off')
-      # # Anzeigen des Subplots
-      # plt.tight_layout()
-      # plt.show()
+          ax = axes[1, each]
+          plot_mask = Image.fromarray(np.transpose((images[each].numpy()*255).astype('uint8'),(1,2,0)))
+          ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          ax.set_title(f'Mask {each}')
+          ax.axis('off')
+      # Anzeigen des Subplots
+      plt.tight_layout()
+      plt.show()
 
       predictions = model(images.to(device))
 
