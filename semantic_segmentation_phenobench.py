@@ -67,11 +67,57 @@ def sub_instance_noise(masks, old_class, new_class, factor, iter=2):
         if num_labels > 1:
           random_instance = np.random.choice(np.unique(labeled_mask)[1:],int(np.ceil(num_labels*factor)))
 
+          ##################################### Plotting #####################################
+          # random_instance = np.unique(labeled_mask)[:]
+          # Images
+          # fig, ax = plt.subplots()
+          # plot_mask = labeled_mask / (num_labels - 1) * 250
+          # plot_mask[plot_mask!=0]+=5
+          # plot_mask = Image.fromarray(plot_mask.astype('uint8'))
+          # # plot_mask[plot_mask==255]=300
+          # ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          # ax.set_title('Leafs Instances')
+          # ax.axis('off')
+          # plt.show()
+          ###################################################################################
+
           # Replace random_instances with new class label
           instance_mask = np.isin(labeled_mask, random_instance)
           instance_mask = (instance_mask*255).astype(np.uint8)
+
+          ##### Plot ######
+          # instance_mask = labeled_mask
+          # instance_mask = (instance_mask/np.max(labeled_mask)*255).astype(np.uint8)
+          #################
           dilated = cv2.dilate(instance_mask, kernel, iterations=iter+2)
 
+          ##################################### Plotting #####################################
+          # num_labels, labeled_mask = cv2.connectedComponents(dilated)
+          ## Images
+          # fig, ax = plt.subplots()
+          # plot_mask = labeled_mask / (num_labels - 1) * 250
+          # plot_mask[plot_mask!=0]+=5
+          # plot_mask = Image.fromarray(plot_mask.astype('uint8'))
+          # plot_mask[plot_mask==255]=300
+          # ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          # ax.set_title('Leafs Instances')
+          # ax.axis('off')
+          # plt.show()
+
+          # plot_dilated = labeled_mask
+          # plot_dilated[mask==0] = 0
+
+          # fig, ax = plt.subplots()
+          # plot_mask = plot_dilated / (num_labels - 1) * 250
+          # plot_mask[plot_mask!=0]+=5
+          # plot_mask = Image.fromarray(plot_mask.astype('uint8'))
+          
+          # plot_mask = Image.fromarray((plot_dilated / (num_labels - 1) * 250).astype('uint8'))
+          # ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+          # ax.set_title('Leafs Instances')
+          # ax.axis('off')
+          # plt.show()
+          ####################################################################################
           modified_masks[i] = np.where((dilated == 255) & (mask == old_class), new_class, mask)
       else: modified_masks[i] = mask
     return torch.from_numpy(modified_masks)
@@ -219,6 +265,24 @@ def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
   else:
     # ipdb.set_trace()
     leaf = torch.tensor(leafs).long().to(device).squeeze(1)
+
+    ######### Plotting Leaf Annotations: #####################################
+    # for test in leaf:
+    #   test = test.numpy()
+    #   test = (test/np.max(test)*255).astype(np.uint8)
+    #   num_labels, labeled_mask = cv2.connectedComponents(test)
+    #   ## Images
+    #   fig, ax = plt.subplots()
+    #   plot_mask = labeled_mask / (num_labels - 1) * 250
+    #   plot_mask[plot_mask!=0]+=5
+    #   plot_mask = Image.fromarray(plot_mask.astype('uint8'))
+    #   # plot_mask[plot_mask==255]=300
+    #   ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
+    #   ax.set_title('Leafs Instances')
+    #   ax.axis('off')
+    #   plt.show()
+    #####################################
+
     for i, mask in enumerate(masks):
       leaf_ids = torch.unique(leaf[i]).cpu().detach().numpy()
       # ipdb.set_trace()
@@ -323,12 +387,12 @@ def main():
                                         interpolation = transforms.InterpolationMode.NEAREST), transforms.PILToTensor()])
 
   transform = {'image': transform_img, 'mask': transform_mask}
-###### Reverse Noise order #########
-  # if leaf_noise_factor > 0:
-  #   train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=True, leaf_class = leaf_class, leaf_noise_factor = leaf_noise_factor, device = device)
-  # else:
-#################
-  train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False, leaf_class = None, leaf_noise_factor = leaf_noise_factor, device = None)
+##### Comment out if reverse Noise order #########
+  if leaf_noise_factor > 0:
+    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=True, leaf_class = leaf_class, leaf_noise_factor = leaf_noise_factor, device = device)
+  else:
+##################################################
+    train_dataset = my_dataloader.Dataset(img_path, transform=transform, split='train', leaf_instances=False, leaf_class = None, leaf_noise_factor = leaf_noise_factor, device = None)
 
   val_dataset = my_dataloader.Dataset(img_path, transform=transform, split='val', leaf_noise_factor = 0)
   
@@ -396,32 +460,32 @@ def main():
 
 ############ Original Order #############
       # Label Augmentations:
-      # noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
       # noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
-      # noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
-      # # noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
-      # if dilation_first == True:
-      #   noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Dilation
-      #   noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
-      # if dilation_first == False:
-      #   noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
-      #   noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
-      # noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
-
-############# Reverse Order ##############
-      # Label Augmentations:
-      # noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
-      noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+      noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
+      # noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
       if dilation_first == True:
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Dilation
         noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
       if dilation_first == False:
         noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
         noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
-      noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
-      #noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
-      noisy_masks = sub_instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
-      noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
+      noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+
+############# Reverse Noise Order ##############
+      # # Label Augmentations:
+      # # noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
+      # noisy_masks = random_noise(noisy_masks, num_classes,device, rn_factor) # Random Noise
+      # if dilation_first == True:
+      #   noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Dilation
+      #   noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
+      # if dilation_first == False:
+      #   noisy_masks = erosion(noisy_masks, num_classes, device, iter = erosion_iter, kernel_size = kernel_size_di_er, er_dil_factor=er_dil_factor) # Erosion
+      #   noisy_masks = dilation(noisy_masks, num_classes, device, iter = dilation_iter, kernel_size = kernel_size_di_er, er_dil_factor = er_dil_factor) # Dilation
+      # noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
+      # #noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      # noisy_masks = sub_instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      # noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
 
 
       # # Anzahl der Spalten und Zeilen im Subplot
@@ -446,9 +510,9 @@ def main():
       #     ax.imshow(plot_mask, interpolation='nearest', cmap='viridis', vmin = 0, vmax = 255)
       #     ax.set_title(f'Mask {each}')
       #     ax.axis('off')
-      # Anzeigen des Subplots
-      plt.tight_layout()
-      plt.show()
+      # # Anzeigen des Subplots
+      # plt.tight_layout()
+      # plt.show()
 
       predictions = model(images.to(device))
 

@@ -52,4 +52,4 @@ class Dataset(object):
             image = self.transform['image'](image)
             mask = Image.fromarray(mask)
             mask = self.transform['mask'](mask)
-        return image, mask
+        return image, mask, torch.empty(0)
