@@ -47,9 +47,9 @@ class Dataset(object):
         ########## Reverse Noise #########
         if self.leaf_instances:
           leaf = Image.fromarray(self.data[idx]['leaf_instances'])
-        if self.leaf_noise_factor > 0:
-          leaf = Image.fromarray(self.data[idx]['leaf_instances'])  ## delete after
-          leaf = self.transform['mask'](leaf) ## delete after
+        # if self.leaf_noise_factor > 0:
+        #   leaf = Image.fromarray(self.data[idx]['leaf_instances'])  ## delete after
+        #   leaf = self.transform['mask'](leaf) ## delete after
 
         if self.transform:
             image = self.transform['image'](image)
