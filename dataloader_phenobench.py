@@ -6,7 +6,6 @@ import torch
 import numpy as np
 
 def leaf_noise(masks, leafs, new_class, leaf_noise_factor, device):
-  print('WRONG FUNCTION!!!!!!!!!!!!!!!!!!!')
   if leaf_noise_factor == 0:
     return masks
   else:
