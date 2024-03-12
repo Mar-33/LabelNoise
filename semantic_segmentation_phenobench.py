@@ -400,7 +400,7 @@ def main():
   data_indices = list(range(len(train_dataset)))
   random.Random(0).shuffle(data_indices)
   split_indices = data_indices[:int(label_p * len(train_dataset))]
-  train_subset = torch.utils.data.Subset(train_dataset, data_indices)
+  train_subset = torch.utils.data.Subset(train_dataset, split_indices)
   print('Number of train images: ',train_subset.__len__())
   print('Number of val images:   ',val_dataset.__len__())
 
