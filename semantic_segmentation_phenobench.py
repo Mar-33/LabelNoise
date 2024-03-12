@@ -48,7 +48,7 @@ def instance_noise(masks, old_class, new_class, factor):
       else: modified_masks[i] = mask
     return torch.from_numpy(modified_masks)
 
-def sub_instance_noise(masks, old_class, new_class, factor, iter=2):
+def sub_instance_noise(masks, old_class, new_class, factor, iter=1):
   if factor == 0:
       return masks
   else:
@@ -338,9 +338,10 @@ def main():
   my_seed = cfg["model"]["seed"]
   encoder = cfg["model"]["encoder"]
   my_dataset = cfg["model"]["model_name"]
-  model_name = my_dataset + "2_"+ encoder + '_seed_' + str(my_seed) + '_sin_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
+  model_name = my_dataset + "2_"+ encoder + '_seed_' + str(my_seed) + '_in_' + str(int(in_factor*100)) + '_rn_' + str(int(rn_factor*100)) + '_di_' + str(int(dilation_iter)) + '_er_' + str(int(erosion_iter)) + '_k' + str(kernel_size_di_er) + '_def_' + str(int(er_dil_factor*100)) + '_difi_' + str(int(dilation_first)) + '_ai_' + str(int(ai_min)) + '_' + str(int(ai_max)) + '_' + str(int(ai_rad)) + '_' + str(int(ai_green)) + '_cc_' + str(int(cut_class)) +'_ci_' + str(int(cut_instance_factor*100))  + '_cf_' + str(int(cut_factor*100)) + '_lfn_once_' + str(int(leaf_noise_factor*100)) + '_' + str(datetime.date.today())
   num_classes = cfg["model"]["num_classes"]
   weights = cfg["model"]["weights"]
+  label_p = cfg["model"]["label_p"]
 
   # Prints and Save:
   print_freq = cfg["print"]["print_freq"]
@@ -396,12 +397,15 @@ def main():
 
   val_dataset = my_dataloader.Dataset(img_path, transform=transform, split='val', leaf_noise_factor = 0)
   
-
-  print('Number of train images: ',train_dataset.__len__())
+  data_indices = list(range(len(train_dataset)))
+  random.Random(0).shuffle(data_indices)
+  split_indices = data_indices[:int(label_p * len(train_dataset))]
+  train_subset = torch.utils.data.Subset(train_dataset, data_indices)
+  print('Number of train images: ',train_subset.__len__())
   print('Number of val images:   ',val_dataset.__len__())
 
   # Create a DataLoader instance for training
-  trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+  trainloader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
   valloader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
   ########################## Create the model ##########################
@@ -460,7 +464,7 @@ def main():
 
 ############ Original Order #############
       # # Label Augmentations:
-      noisy_masks = sub_instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
+      noisy_masks = instance_noise(noisy_masks, old_class = in_old_class, new_class = in_new_class, factor = in_factor) # Instance Noise (Plant2Weed)
       # noisy_masks = cut_instance(noisy_masks, class2cut = cut_class, cut_instance_factor = cut_instance_factor, cut_factor = cut_factor, device=device)
       noisy_masks, images = add_instances(noisy_masks, images, min_instances = ai_min, max_instances = ai_max, new_class = ai_class, max_radius = ai_rad, green_factor = ai_green)
       # noisy_masks = leaf_noise(noisy_masks, leafs, new_class = leaf_class , leaf_noise_factor = leaf_noise_factor, device = device)
